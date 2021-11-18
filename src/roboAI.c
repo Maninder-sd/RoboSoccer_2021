@@ -49,6 +49,11 @@ double crossie_sign(double vx, double vy, double ux, double uy)
  else return 1;
 }
 
+double get_standard_y_postioin(double y_postion)
+{
+  return IM_SIZE_Y - y_postion;
+}
+
 /**************************************************************
  * Display List Management - EXPERIMENTAL (you don't need this
  * to solve your RoboSoccer project). The Display List is an
@@ -623,7 +628,126 @@ void AI_calibrate(struct RoboAI *ai, struct blob *blobs)
  track_agents(ai,blobs);
 }
 
+double dot_prod(double vx,double vy,double wx, double wy) {
+    return vx*wx + vy*wy;
+}
 
+/* get angle for vectors origin->point1 and origin->point2 in range[0, 360]
+ * NOTE: expects standard y-position, i.e y+ is up
+ * so you cannnot just directly plug in positions of agents from state
+**/
+double get_angle(double origin_x, double origin_y, double point1_x, double point1_y, double point2_x, double point2_y)
+{
+    
+    double centered_rx = point1_x - origin_x, centered_ry = point1_y - origin_y;
+    double centered_tx = point2_x - origin_x, centered_ty = point2_y - origin_y;
+    
+    double dot = dot_prod(centered_rx, centered_ry, centered_tx, centered_ty);  // dot product
+    double det = centered_rx*centered_ty - centered_ry*centered_tx;    // determinant
+    double atan2_angle = atan2(det, dot);  // atan2(y, x) or atan2(sin, cos)
+    
+    if (atan2_angle < 0) {
+        atan2_angle = (2 * M_PI) + atan2_angle;
+    }
+    
+    return atan2_angle;
+}
+
+double get_theta_from_alpha(double x) {
+  // x in the alpha
+  x = (M_PI - x);
+  if (x < 0) {
+    x += 2 * M_PI;
+  }
+
+  int n = 6;
+
+  if (x == M_PI) { 
+    return M_PI / 2;
+  } else {
+    return (M_PI / 2) * (pow(fabs((1 / M_PI) * (x - M_PI)), n) - 1) * ((x - M_PI) / fabs(x - M_PI));
+  }
+}
+
+inline double get_degrees_for_radians(double rads) {
+  return (rads / (2 * M_PI)) * 360;
+}
+
+
+double boundAngle0To360(double theta) {
+  if (theta >= M_PI*2) return theta-M_PI*2;
+  if (theta < 0) return theta + M_PI*2;
+  return theta;
+}
+
+//input theta in [-180 - 359, 180 + 360]
+double boundAngle180To180(double theta) {
+  if (theta > M_PI) return theta-M_PI*2;
+  if (theta <= -M_PI) return theta + M_PI*2;
+  return theta;
+}
+
+//TODO: if theta err is too high, turn on spot before resuming PID
+void align_bot_PID(double alpha, double theta) {
+
+  double theta_target = get_theta_from_alpha(alpha);
+  double theta_err = boundAngle180To180(boundAngle0To360(theta_target) - boundAngle0To360(theta));
+  double alpha_err = M_PI - alpha;  // target is M_PI
+  printf("alpha: %f, theta actual: %f, theta target: %f\n", alpha, boundAngle180To180(theta), theta_target);
+
+  printf("alpha_err: %f theta_err %f \n", alpha_err, theta_err);
+  double motorR = 40 * fabs(alpha_err) + (30 * theta_err);
+  double motorL = 40 * fabs(alpha_err) ;//- (K_THETA * theta_err);
+
+  if(fabs(alpha_err) < 0.32 && fabs(theta_err) < 0.5  ){
+    motorR = 80 * fabs(alpha_err) + (80* theta_err);
+    motorL = 80 * fabs(alpha_err) ;//- (K_THETA * theta_err);
+
+    // BT_motor_port_start(MOTOR_A, 0);  // set right motor speed
+    // BT_motor_port_start(MOTOR_B, 0);  // set right motor speed
+    // printf("aligned!!\n");
+
+  }
+    if(fabs(alpha_err) < 0.1 && fabs(theta_err) < 0.1  ){
+    motorR = 100 * fabs(alpha_err) + (100* theta_err);
+    motorL = 100 * fabs(alpha_err) ;//- (K_THETA * theta_err);
+
+    // BT_motor_port_start(MOTOR_A, 0);  // set right motor speed
+    // BT_motor_port_start(MOTOR_B, 0);  // set right motor speed
+    // printf("aligned!!\n");
+
+  }
+
+  if(fabs(alpha_err) < 0.02 && fabs(theta_err) < 0.1  ){
+    printf("aligned!!\n");
+    motorR = 0;
+    motorL = 0;
+    sleep(5);
+    BT_motor_port_start(MOTOR_A, 12);  // set right motor speed
+    BT_motor_port_start(MOTOR_B, 12);  // set right motor speed
+    sleep(1);
+    motorR = 0;
+    motorL = 0;
+    
+
+  }
+
+ 
+  // double motorR = 5 + (K_THETA * theta_err);
+  // double motorL = 5 - (K_THETA * theta_err);
+
+  printf("Motor_R : %f\n",  motorR);
+  printf("Motor_LL: %f\n",  motorL);
+
+
+
+  BT_motor_port_start(MOTOR_A, motorR);  // set right motor speed
+  BT_motor_port_start(MOTOR_B, motorL);  // set right motor speed
+}
+
+
+
+double old_heading_x = 0, old_heading_y = 0;
 /**************************************************************************
  * AI state machine - this is where you will implement your soccer
  * playing logic
@@ -696,7 +820,7 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
                               
   ** Do not change the behaviour of the robot ID routine **
  **************************************************************************/
-
+  // printf("AI_main() called...\n");
   static double ux,uy,len,mmx,mmy,px,py,lx,ly,mi;
   double angDif, lPow,rPow;
   char line[1024];
@@ -785,8 +909,46 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
    state transitions and with calling the appropriate function based on what
    the bot is supposed to be doing.
   *****************************************************************************/
+
+  // note our angles are expected to be in range [0, 360)
+  // got it from pAco's git log - dont say it out loud cos those guys 
+  // take out those unexpected angle changes
+  if (ai->st.self==NULL) {
+    return; // DO SOMETHING ELSE - lost 
+  }
+
+  double angle_difference = dottie(ai->st.sdx, ai->st.sdy, old_heading_x, old_heading_y);
+  if (angle_difference < 0) {
+    ai->st.sdx *= -1;
+    ai->st.sdy *= -1;
+    ai->st.self->dx *= -1;
+    ai->st.self->dy *= -1;
+  }
+
+  double ball_x = ai->st.old_bcx, ball_y = get_standard_y_postioin(ai->st.old_bcy), 
+         bot_x = ai->st.old_scx, bot_y = get_standard_y_postioin(ai->st.old_scy),
+         target_x = 0, target_y = get_standard_y_postioin(IM_SIZE_Y/2); // targets can depend on state, ex/ for penalty, should be middle of goal
+                                     // or can be some custom target
+
+  double alpha_angle = get_angle(ball_x, ball_y, bot_x, bot_y, target_x, target_y); 
+  double target_theta = get_theta_from_alpha(alpha_angle);
+
+  double bot_heading_x = (ai->st.sdx + ai->st.old_scx), 
+         bot_heading_y = get_standard_y_postioin(ai->st.sdy + ai->st.old_scy);
+
+  double theta_measured =  get_angle(bot_x, bot_y, ball_x, ball_y, bot_heading_x, bot_heading_y); 
+  // printf("theta_measured in deg: %f\n", get_degrees_for_radians(theta_measured));
+
+
+  // printf("alpha_angle in deg: %f\n", get_degrees_for_radians(alpha_angle));
+  // printf("thetha target in deg: %f\n", get_degrees_for_radians(target_theta));
+  // printf("ball_x: %f, ball_y: %f\n", ball_x, ball_y);
+  align_bot_PID(alpha_angle, theta_measured);
+  
 //  fprintf(stderr,"Just trackin'!\n");	// bot, opponent, and ball.
-//  track_agents(ai,blobs);		// Currently, does nothing but endlessly track
+  old_heading_x = ai->st.sdx;
+  old_heading_y = ai->st.sdy;
+  track_agents(ai,blobs);		// Currently, does nothing but endlessly track
  }
 
 }

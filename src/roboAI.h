@@ -30,6 +30,9 @@
 #define LEFT_MOTOR MOTOR_B
 #define RIGHT_MOTOR MOTOR_A
 
+#define IM_SIZE_X 1024
+#define IM_SIZE_Y 768
+
 #define AI_SOCCER 0 	// Play soccer!
 #define AI_PENALTY 1    // Go score some goals!
 #define AI_CHASE 2 	// Kick the ball around and chase it!
@@ -41,6 +44,11 @@
 #define MIN_DRIVE_POWER     25
 #define MAX_DRIVE_POWER     100
 #define TURN_ADJ_POWER      25
+
+#define K_ALPHA 15
+#define K_THETA 25
+
+void align_bot_PID(double alpha, double theta);
 
 struct AI_data{
 	// This data structure is used to hold all data relevant to the state of the AI.
