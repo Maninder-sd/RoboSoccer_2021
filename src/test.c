@@ -34,7 +34,7 @@ double get_theta_from_alpha(double x) {
   theta = (-M_PI / 2) * theta;
   return theta;
 }
-#define K_ALPHA 50
+#define K_ALPHA 30
 #define K_THETA 10
 
 void align_bot_PID(double alpha, double theta) {
@@ -43,6 +43,7 @@ void align_bot_PID(double alpha, double theta) {
 
   int motorR = K_ALPHA * fabs(alpha_err) + (K_THETA * theta_err);
   int motorL = K_ALPHA * fabs(alpha_err) - (K_THETA * theta_err);
+  printf("Motor_L : %f Motor_R : %f \n", motorL, motorR);
 
   BT_motor_port_start(MOTOR_A, motorR);  // set right motor speed
   BT_motor_port_start(MOTOR_B, motorL);  // set right motor speed
