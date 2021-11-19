@@ -699,37 +699,37 @@ void align_bot_PID(double alpha, double theta) {
   double motorR = 40 * fabs(alpha_err) + (30 * theta_err);
   double motorL = 40 * fabs(alpha_err) ;//- (K_THETA * theta_err);
 
-  if(fabs(alpha_err) < 0.32 && fabs(theta_err) < 0.5  ){
-    motorR = 80 * fabs(alpha_err) + (80* theta_err);
-    motorL = 80 * fabs(alpha_err) ;//- (K_THETA * theta_err);
 
-    // BT_motor_port_start(MOTOR_A, 0);  // set right motor speed
-    // BT_motor_port_start(MOTOR_B, 0);  // set right motor speed
-    // printf("aligned!!\n");
 
-  }
-    if(fabs(alpha_err) < 0.1 && fabs(theta_err) < 0.1  ){
-    motorR = 100 * fabs(alpha_err) + (100* theta_err);
-    motorL = 100 * fabs(alpha_err) ;//- (K_THETA * theta_err);
 
-    // BT_motor_port_start(MOTOR_A, 0);  // set right motor speed
-    // BT_motor_port_start(MOTOR_B, 0);  // set right motor speed
-    // printf("aligned!!\n");
+   if(fabs(alpha_err) < 0.05 && fabs(theta_err) < 0.1  ){
+    printf("\n\n\n aligned!!\n\n");
+    BT_motor_port_start(MOTOR_A, 0);  // set right motor speed
+    BT_motor_port_start(MOTOR_B, 0);  // set right motor speed
+    sleep(2);
 
-  }
-
-  if(fabs(alpha_err) < 0.02 && fabs(theta_err) < 0.1  ){
-    printf("aligned!!\n");
-    motorR = 0;
-    motorL = 0;
-    sleep(5);
     BT_motor_port_start(MOTOR_A, 12);  // set right motor speed
     BT_motor_port_start(MOTOR_B, 12);  // set right motor speed
     sleep(1);
     motorR = 0;
     motorL = 0;
-    
+  }else if(fabs(alpha_err) < 0.12 && fabs(theta_err) < 0.12  ){
+    printf("inside 0.12 \n");
+    motorR = 120 * fabs(alpha_err) + (120* theta_err);
+    motorL = 120 * fabs(alpha_err) ;//- (K_THETA * theta_err);
 
+    // BT_motor_port_start(MOTOR_A, 0);  // set right motor speed
+    // BT_motor_port_start(MOTOR_B, 0);  // set right motor speed
+    // printf("aligned!!\n");
+
+  }  else if(fabs(alpha_err) < 0.5 && fabs(theta_err) < 0.5  ){
+    printf("inside 0.5 \n");
+    motorR = 80 * fabs(alpha_err) + (80* theta_err);
+    motorL = 80 * fabs(alpha_err) ;//- (K_THETA * theta_err);
+  }  else if(fabs(alpha_err) < 0.8 && fabs(theta_err) < 0.8  ){
+    printf("inside 0.8 \n");
+    motorR = 40 * fabs(alpha_err) + (40* theta_err);
+    motorL = 40 * fabs(alpha_err) ;//- (K_THETA * theta_err);
   }
 
  
