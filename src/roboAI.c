@@ -696,13 +696,13 @@ void align_bot_PID(double alpha, double theta) {
   printf("alpha: %f, theta actual: %f, theta target: %f\n", alpha, boundAngle180To180(theta), theta_target);
 
   printf("alpha_err: %f theta_err %f \n", alpha_err, theta_err);
-  double motorR = 40 * fabs(alpha_err) + (30 * theta_err);
-  double motorL = 40 * fabs(alpha_err) ;//- (K_THETA * theta_err);
+  double motorR;
+  double motorL;
 
 
 
 
-   if(fabs(alpha_err) < 0.05 && fabs(theta_err) < 0.1  ){
+   if(fabs(alpha_err) < 0.1 && fabs(theta_err) < 0.1  ){
     printf("\n\n\n aligned!!\n\n");
     BT_motor_port_start(MOTOR_A, 0);  // set right motor speed
     BT_motor_port_start(MOTOR_B, 0);  // set right motor speed
@@ -713,10 +713,10 @@ void align_bot_PID(double alpha, double theta) {
     sleep(1);
     motorR = 0;
     motorL = 0;
-  }else if(fabs(alpha_err) < 0.12 && fabs(theta_err) < 0.12  ){
+  }else if(fabs(alpha_err) < 0.25 && fabs(theta_err) < 0.25  ){
     printf("inside 0.12 \n");
-    motorR = 120 * fabs(alpha_err) + (120* theta_err);
-    motorL = 120 * fabs(alpha_err) ;//- (K_THETA * theta_err);
+    motorR = 50 * fabs(alpha_err) + (60* theta_err);
+    motorL = 50 * fabs(alpha_err) ;//- (K_THETA * theta_err);
 
     // BT_motor_port_start(MOTOR_A, 0);  // set right motor speed
     // BT_motor_port_start(MOTOR_B, 0);  // set right motor speed
@@ -724,12 +724,15 @@ void align_bot_PID(double alpha, double theta) {
 
   }  else if(fabs(alpha_err) < 0.5 && fabs(theta_err) < 0.5  ){
     printf("inside 0.5 \n");
-    motorR = 80 * fabs(alpha_err) + (80* theta_err);
-    motorL = 80 * fabs(alpha_err) ;//- (K_THETA * theta_err);
-  }  else if(fabs(alpha_err) < 0.8 && fabs(theta_err) < 0.8  ){
-    printf("inside 0.8 \n");
     motorR = 40 * fabs(alpha_err) + (40* theta_err);
     motorL = 40 * fabs(alpha_err) ;//- (K_THETA * theta_err);
+  }  else if(fabs(alpha_err) < 0.6 && fabs(theta_err) < 0.6 ){
+    printf("inside 0.8 \n");
+    motorR = 30 * fabs(alpha_err) + (30* theta_err);
+    motorL = 30 * fabs(alpha_err) ;//- (K_THETA * theta_err);
+  }else{
+    motorR = 10 * fabs(alpha_err) + (10 * theta_err);
+    motorL = 10 * fabs(alpha_err) ;//- (K_THETA * theta_err);
   }
 
  
@@ -914,6 +917,8 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
   // got it from pAco's git log - dont say it out loud cos those guys 
   // take out those unexpected angle changes
   if (ai->st.self==NULL) {
+      track_agents(ai,blobs);		// Currently, does nothing but endlessly track
+
     return; // DO SOMETHING ELSE - lost 
   }
 
