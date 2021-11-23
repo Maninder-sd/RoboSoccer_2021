@@ -25,6 +25,9 @@
 #include "API/btcomm.h"
 #include <stdio.h>
 #include <stdlib.h>
+// #include <cfloat>
+
+#define MAX_NUM_VALUES 12
 
 //update to actual motors
 #define LEFT_MOTOR MOTOR_B
@@ -164,5 +167,13 @@ struct displayList *clearDP(struct displayList *head);
    Add headers for your own functions implementing the bot's soccer
    playing functionality below.
 *****************************************************************************/
+
+struct linear_filter_context {
+  double values[MAX_NUM_VALUES];
+  double times[MAX_NUM_VALUES];
+  int filter_size;
+  int current_index;
+  double (*apply_filter)(struct linear_filter_context* filter_struct, double new_input);
+};
 
 #endif

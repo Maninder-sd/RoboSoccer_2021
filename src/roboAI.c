@@ -30,6 +30,64 @@
 
 #include "roboAI.h"			// <--- Look at this header file!
 
+#define INVALID_FILTER_VALUE 101010101.01
+
+static struct linear_filter_context self_bot_linear_filter_pos_x;
+long unsigned int frame_count = 0;
+
+
+double apply_filter(struct linear_filter_context* filter_struct, double new_input) {
+  // add new input in correct position
+  filter_struct->values[filter_struct->current_index] = new_input;
+  filter_struct->times[filter_struct->current_index] = frame_count;
+  // compute denoised value
+
+  double mean_y = 0, mean_time = 0;
+  int n=0;
+  for (int i = 0; i < filter_struct->filter_size; i++) {
+    if (filter_struct->values[i] != INVALID_FILTER_VALUE) {
+      mean_y += filter_struct->values[i];
+      mean_time += filter_struct->times[i];
+      n += 1;
+    }
+  }
+  mean_y /= n;
+  mean_time /= n;
+  
+  double m_numer = 0, m_denom = 0;
+  for (int i = 0; i < filter_struct->filter_size; i++) {
+    if (filter_struct->values[i] != INVALID_FILTER_VALUE) {
+      double diff_y = filter_struct->values[i] - mean_y;
+      double diff_time = filter_struct->times[i] - mean_time;
+
+      m_numer += diff_y*diff_time;
+      m_denom += diff_time*diff_time;
+    }
+  }
+
+  double m = m_numer / m_denom;
+  double b = mean_y - m*mean_time;
+
+  double denoised_input = m*(frame_count+1) + b;
+  filter_struct->current_index = (filter_struct->current_index+1) % filter_struct->filter_size;
+  return denoised_input;
+}
+
+// TODO: initialize filter arrays
+double initialize_filter(struct linear_filter_context* filter_struct, int filter_size) {
+  filter_struct->filter_size = filter_size;
+  for (int i = 0; i < MAX_NUM_VALUES; i++) {
+    filter_struct->values[i] = INVALID_FILTER_VALUE;
+    filter_struct->times[i] = INVALID_FILTER_VALUE;
+  }
+
+  filter_struct->current_index = 0;
+  filter_struct->apply_filter = &apply_filter;
+}
+
+
+
+
 double dottie(double vx, double vy, double ux, double uy)
 {
  // Returns the dot product of the two vectors [vx,vy] and [ux,uy]
@@ -749,6 +807,75 @@ void align_bot_PID(double alpha, double theta) {
 }
 
 
+double get_angle_btwn_vectors(double v1_x, double v1_y, double v2_x, double v2_y) {
+  double dot = dot_prod(v1_x, v1_y, v2_x, v2_y);  // dot product
+  double det = v1_x*v2_y - v1_y*v2_x;    // determinant
+  double atan2_angle = atan2(det, dot);  // atan2(y, x) or atan2(sin, cos)
+  
+  if (atan2_angle < 0) {
+      atan2_angle = (2 * M_PI) + atan2_angle;
+  }
+  
+  return atan2_angle;
+}
+
+double get_standard_angle_for_vector(double v1_x, double v1_y) {
+  static double STANDARD_X = 1, STANDARD_Y = 0;
+  return get_angle_btwn_vectors(v1_x, v1_y, STANDARD_X, STANDARD_Y);
+}
+
+struct pid_context_struct {
+  // weights for p.i.d TODO: needs fine-tuning
+  double k_p; 
+  double k_i; 
+  double k_d;
+  double input_scale;
+  double intergal_sum;
+  double current_proportion;
+  char valid_current_proportion;
+};
+
+double turn_on_spot_PID(double angle_error) {
+// TODO: use pid_context_struct
+
+  static double old_error = 0;
+  static double i_error = 0;
+
+  double p_error = angle_error;
+  i_error += p_error;
+  double d_error = angle_error - old_error;
+
+  old_error = p_error;
+
+  double k_p = 1, k_i = 0, k_d = 0, k_s = 0.25;
+  double k_sum_pid = k_p + k_d + k_i;
+  double normalized_k_p = k_p / k_sum_pid, normalized_k_i = k_i / k_sum_pid, normalized_k_d = k_d / k_sum_pid; 
+  double output = k_s * (normalized_k_p * p_error + normalized_k_i * i_error + normalized_k_d * d_error);
+  if (fabs(output) > 1) {
+    return output / fabs(output);
+  } else {
+    return output;
+  }
+}
+
+void turn_to_target(double current_heading_x, double current_heading_y, double target_heading_x, double target_heading_y) {
+  printf("current_heading_x: %f  current_heading_y: %f\n", current_heading_x, current_heading_y);
+
+  double current_heading_standard_angle = get_standard_angle_for_vector(current_heading_x, current_heading_y);
+  double target_heading_standard_angle = get_standard_angle_for_vector(target_heading_x, target_heading_y);
+  printf("current_heading_standard_angle: %f  target_heading_standard_angle: %f\n", current_heading_standard_angle, target_heading_standard_angle);
+
+  double angle_error = boundAngle180To180(target_heading_standard_angle - current_heading_standard_angle);
+  double pid_out = turn_on_spot_PID(angle_error);
+  double MAX_SPEED = 100;
+  int motor_out = round(pid_out * MAX_SPEED);
+  printf("motor_out: %d\n", motor_out);
+
+  fflush(stdout); 
+  BT_motor_port_start(LEFT_MOTOR, -1 * motor_out);  
+  BT_motor_port_start(RIGHT_MOTOR, motor_out);  
+}
+
 
 double old_heading_x = 0, old_heading_y = 0;
 /**************************************************************************
@@ -823,7 +950,7 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
                               
   ** Do not change the behaviour of the robot ID routine **
  **************************************************************************/
-  // printf("AI_main() called...\n");
+  printf("AI_main() called...\n");
   static double ux,uy,len,mmx,mmy,px,py,lx,ly,mi;
   double angDif, lPow,rPow;
   char line[1024];
@@ -889,6 +1016,8 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
 
    // Notice that the ball's blob direction is not useful! only its
    // position and motion matter.
+
+   initialize_filter(&self_bot_linear_filter_pos_x, 5); // TODO: make into marco
   }
      
  }
@@ -912,50 +1041,36 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
    state transitions and with calling the appropriate function based on what
    the bot is supposed to be doing.
   *****************************************************************************/
-
+  printf("inside else\n");
   // note our angles are expected to be in range [0, 360)
-  // got it from pAco's git log - dont say it out loud cos those guys 
   // take out those unexpected angle changes
-  if (ai->st.self==NULL) {
-      track_agents(ai,blobs);		// Currently, does nothing but endlessly track
+  if (ai->st.self != NULL) {
 
-    return; // DO SOMETHING ELSE - lost 
+    // double denoised_pos_x = apply_filter(&self_bot_linear_filter_pos_x, ai->st.self->cx);
+
+    // printf("denoised_pos_x: %f, pos_x: %f\n", denoised_pos_x, ai->st.self->cx);
+    // TODO: maybe move this into a function
+    // double angle_difference = dottie(ai->st.sdx, ai->st.sdy, old_heading_x, old_heading_y);
+    // if (angle_difference < 0) {
+    //   ai->st.sdx *= -1;
+    //   ai->st.sdy *= -1;
+    //   ai->st.self->dx *= -1;
+    //   ai->st.self->dy *= -1;
+    // }
+    
+    // double target_heading_x = 0, target_heading_y = -1; // fixed for now, TODO update to ball or some point
+
+    // turn_to_target(ai->st.sdx, ai->st.sdy, target_heading_x, target_heading_y);
   }
+  // turn PID
 
-  double angle_difference = dottie(ai->st.sdx, ai->st.sdy, old_heading_x, old_heading_y);
-  if (angle_difference < 0) {
-    ai->st.sdx *= -1;
-    ai->st.sdy *= -1;
-    ai->st.self->dx *= -1;
-    ai->st.self->dy *= -1;
-  }
-
-  double ball_x = ai->st.old_bcx, ball_y = get_standard_y_postioin(ai->st.old_bcy), 
-         bot_x = ai->st.old_scx, bot_y = get_standard_y_postioin(ai->st.old_scy),
-         target_x = 0, target_y = get_standard_y_postioin(IM_SIZE_Y/2); // targets can depend on state, ex/ for penalty, should be middle of goal
-                                     // or can be some custom target
-
-  double alpha_angle = get_angle(ball_x, ball_y, bot_x, bot_y, target_x, target_y); 
-  double target_theta = get_theta_from_alpha(alpha_angle);
-
-  double bot_heading_x = (ai->st.sdx + ai->st.old_scx), 
-         bot_heading_y = get_standard_y_postioin(ai->st.sdy + ai->st.old_scy);
-
-  double theta_measured =  get_angle(bot_x, bot_y, ball_x, ball_y, bot_heading_x, bot_heading_y); 
-  // printf("theta_measured in deg: %f\n", get_degrees_for_radians(theta_measured));
-
-
-  // printf("alpha_angle in deg: %f\n", get_degrees_for_radians(alpha_angle));
-  // printf("thetha target in deg: %f\n", get_degrees_for_radians(target_theta));
-  // printf("ball_x: %f, ball_y: %f\n", ball_x, ball_y);
-  align_bot_PID(alpha_angle, theta_measured);
   
 //  fprintf(stderr,"Just trackin'!\n");	// bot, opponent, and ball.
   old_heading_x = ai->st.sdx;
   old_heading_y = ai->st.sdy;
+  frame_count++;
   track_agents(ai,blobs);		// Currently, does nothing but endlessly track
  }
-
 }
 
 /**********************************************************************************
