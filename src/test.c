@@ -57,3 +57,70 @@ int main() {
   double v_r1[2];
   double v_r2[2];
 }
+
+
+
+double dottie(double v[2], double u[2])
+{
+ // Returns the dot product of the two vectors 
+ return (v[0]*u[0])+(v[1]*u[1]);
+}
+
+
+finding_errors( double ball_pos[2], double bot_pos[2], double target_pos[2] , double * distance_err, double* lateral_err){
+
+    *distance_err = sqrt(  (ball_pos[0] - bot_pos[0])*(ball_pos[0] - bot_pos[0]) +   (ball_pos[1] - bot_pos[1])*(ball_pos[1] - bot_pos[1]) );
+    
+    double goal_to_ball[2];
+    goal_to_ball[0] =  target_pos[0] -ball_pos[0];
+    goal_to_ball[1] =  target_pos[1] -ball_pos[1];
+    
+    double bot_to_ball[2];
+    bot_to_ball[0] =  ball_pos[0] -bot_pos[0];
+    bot_to_ball[1] =  ball_pos[1] -bot_pos[1];
+    
+  
+    double projected_dist= dottie(goal_to_ball, bot_to_ball) / sqrt(dottie(goal_to_ball, goal_to_ball));
+
+    *lateral_err = sqrt((*distance_err)*(*distance_err) - projected_dist*projected_dist);
+
+}
+
+
+
+
+
+#define INTEGRATION_DEPTH 10
+
+double drive_straight_to_target_PID(double distance_err) {
+  int motorL,motorR;
+
+  static double old_error = 0;
+  static double i_errors[INTEGRATION_DEPTH] ;
+  static int i_index; //index to change 
+
+  double i_error=0;
+
+
+  double p_error = distance_err;
+  double d_error = (distance_err - old_error)/ 0.083;
+  old_error = distance_err;
+
+  i_errors[i_index] = distance_err;
+  i_index =(i_index+1) % INTEGRATION_DEPTH;
+  for(int i=0; i<INTEGRATION_DEPTH; i++){
+    i_error+=i_errors[i];
+  }
+
+
+  double k_p = 1, k_i = 0, k_d = 0, k_s = 0.25;
+  double k_sum_pid = k_p + k_d + k_i;
+  double normalized_k_p = k_p / k_sum_pid, normalized_k_i = k_i / k_sum_pid, normalized_k_d = k_d / k_sum_pid; 
+  double output = k_s * (normalized_k_p * p_error + normalized_k_i * i_error + normalized_k_d * d_error);
+  if (fabs(output) > 1) {
+    return output / fabs(output);
+  } else {
+    return output;
+  }
+  
+}
