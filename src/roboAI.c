@@ -1091,15 +1091,26 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
     double distance_err, lateral_err;
     finding_errors(ball_pos, bot_pos, target_pos, &distance_err, &lateral_err); // distance error is always positive
     double drive_straight_output = drive_straight_to_target_PID(distance_err); 
-    double turn_align_output = align_straight_to_target_PID(lateral_err);
+    
+    //calculate angle correction needed at current position
+    double relative_target_angle = get_target_angle_from_line(lateral_err, ball_pos, target_pos);
+    double relative_curr_angle = get_curr_angle_from_line(ball_pos, target_pos, bot_pos);
+    double angle_err = boundAngle180To180(relative_target_angle - relative_curr_angle);
+
+    //double turn_align_output = align_straight_to_target_PID(lateral_err);
     printf("distance_err: %f  lateral_err:%f drive_straight_output: %f turn_align_output:%f\n", distance_err, lateral_err, drive_straight_output, turn_align_output); 
     fflush(stdout);
 
-    double right_bias = -5 * turn_align_output, left_bais = 5 * turn_align_output;
+    double max_speed = 50;
+    
+    BT_drive(RIGHT_MOTOR, max_speed - (angle_err / pi)*max_speed);
+    BT_drive(LEFT_MOTOR, max_speed + (angle_err / pi)*max_speed);
+
+    //double right_bias = -5 * turn_align_output, left_bais = 5 * turn_align_output;
 
     // BT_drive(LEFT_MOTOR, RIGHT_MOTOR, 50*drive_straight_output);			// Start forward motion to establish heading
-    BT_motor_port_start(RIGHT_MOTOR, 50*drive_straight_output + right_bias);  // set right motor speed
-    BT_motor_port_start(LEFT_MOTOR, 50*drive_straight_output + left_bais);  // set right motor speed
+    //BT_motor_port_start(RIGHT_MOTOR, 50*drive_straight_output + right_bias);  // set right motor speed
+    //BT_motor_port_start(LEFT_MOTOR, 50*drive_straight_output + left_bais);  // set right motor speed
     // turn_to_target(ai->st.sdx, ai->st.sdy, target_heading_x, target_heading_y);
   }
   // turn PID
