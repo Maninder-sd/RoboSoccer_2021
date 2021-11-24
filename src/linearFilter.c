@@ -26,9 +26,8 @@ double apply_filter(struct linear_filter_context* filter_struct, double new_inpu
   filter_struct->values[filter_struct->current_index] = new_input;
   filter_struct->times[filter_struct->current_index] = new_time;
   filter_struct->current_index = (filter_struct->current_index+1) % filter_struct->filter_size;
+  
   // compute denoised value
-  print_linear_filter(filter_struct);
-
   double mean_y = 0, mean_time = 0;
   int n=0;
   for (int i = 0; i < filter_struct->filter_size; i++) {
@@ -61,7 +60,7 @@ double apply_filter(struct linear_filter_context* filter_struct, double new_inpu
   double b = mean_y - m*mean_time;
 
   double denoised_input = m*(new_time+1) + b;
-
+    printf("before: %f  after: %f\n", new_input, denoised_input);
   return denoised_input;
 }
 

@@ -31,7 +31,7 @@
 #include "roboAI.h"			// <--- Look at this header file!
 #include "test.c"
 #include "linearFilter.c"
-
+#include "mathHelpers.c"
 
 /**************************************************************
  * Display List Management - EXPERIMENTAL (you don't need this
@@ -706,19 +706,6 @@ void align_bot_PID(double alpha, double theta) {
   BT_motor_port_start(MOTOR_B, motorL);  // set right motor speed
 }
 
-
-double get_angle_btwn_vectors(double v1_x, double v1_y, double v2_x, double v2_y) {
-  double dot = dot_prod(v1_x, v1_y, v2_x, v2_y);  // dot product
-  double det = v1_x*v2_y - v1_y*v2_x;    // determinant
-  double atan2_angle = atan2(det, dot);  // atan2(y, x) or atan2(sin, cos)
-  
-  if (atan2_angle < 0) {
-      atan2_angle = (2 * M_PI) + atan2_angle;
-  }
-  
-  return atan2_angle;
-}
-
 double turn_on_spot_PID(double angle_error) {
 // TODO: use pid_context_struct
 
@@ -760,6 +747,20 @@ void turn_to_target(double current_heading_x, double current_heading_y, double t
   BT_motor_port_start(RIGHT_MOTOR, motor_out);  
 }
 
+void print_denoised_self_bot() {
+    // printf("scx ");
+    // double denoised_scx = apply_filter(&self_bot_linear_filter_pos_x, ai->st.old_scx, frame_count);
+    // printf("scy ");
+    // double denoised_scy = apply_filter(&self_bot_linear_filter_pos_y, ai->st.old_scy, frame_count);
+    // printf("svx ");
+    // double denoised_svx = apply_filter(&self_bot_linear_filter_vel_x, ai->st.svx, frame_count);
+    // printf("svy ");
+    // double denoised_svy = apply_filter(&self_bot_linear_filter_vel_y, ai->st.svy, frame_count);
+    // printf("sdx ");
+    // double denoised_sdx = apply_filter(&self_bot_linear_filter_heading_x, ai->st.sdx, frame_count);
+    // printf("sdy ");
+    // double denoised_sdy = apply_filter(&self_bot_linear_filter_heading_y, ai->st.sdy, frame_count);
+}
 
 /**************************************************************************
  * AI state machine - this is where you will implement your soccer
@@ -847,7 +848,13 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
 
   // denoising filters
   static struct linear_filter_context self_bot_linear_filter_pos_x;
+  static struct linear_filter_context self_bot_linear_filter_pos_y;
 
+  static struct linear_filter_context self_bot_linear_filter_vel_x;
+  static struct linear_filter_context self_bot_linear_filter_vel_y;
+
+  static struct linear_filter_context self_bot_linear_filter_heading_x;
+  static struct linear_filter_context self_bot_linear_filter_heading_y;
   
   // change to the ports representing the left and right motors in YOUR robot
   char lport=MOTOR_A;
@@ -857,6 +864,11 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
   if (!once_ran) {
     once_ran = 1;
     initialize_filter(&self_bot_linear_filter_pos_x, AVG_FILTER_SIZE);
+    initialize_filter(&self_bot_linear_filter_pos_y, AVG_FILTER_SIZE);
+    initialize_filter(&self_bot_linear_filter_vel_x, AVG_FILTER_SIZE);
+    initialize_filter(&self_bot_linear_filter_vel_y, AVG_FILTER_SIZE);
+    initialize_filter(&self_bot_linear_filter_heading_x, AVG_FILTER_SIZE);
+    initialize_filter(&self_bot_linear_filter_heading_y, AVG_FILTER_SIZE);
   }    
   /************************************************************
    * Standard initialization routine for starter code,
@@ -905,7 +917,6 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
        old_dx=ai->st.sdx;
        old_dy=ai->st.sdy;
    }
-  
    if (ai->st.opp!=NULL)
    {
        // Checks motion vector and blob direction for opponent. See above.
@@ -955,21 +966,21 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
       ai->st.self->dx *= -1;
       ai->st.self->dy *= -1;
     }
-     double ball_pos[2] = {IM_SIZE_X/2, IM_SIZE_Y/2}, 
-            bot_pos[2] = {ai->st.old_scx, ai->st.old_scy}, 
-            target_pos[2] = {IM_SIZE_X, goal_center_y};
-    double distance_err, lateral_err;
-    finding_errors(ball_pos, bot_pos, target_pos, &distance_err, &lateral_err); // distance error is always positive
-    double drive_straight_output = drive_straight_to_target_PID(distance_err); 
-    double turn_align_output = align_straight_to_target_PID(lateral_err);
-    printf("distance_err: %f  lateral_err:%f drive_straight_output: %f turn_align_output:%f\n", distance_err, lateral_err, drive_straight_output, turn_align_output); 
-    fflush(stdout);
 
-    double right_bias = -5 * turn_align_output, left_bais = 5 * turn_align_output;
+    //  double ball_pos[2] = {IM_SIZE_X/2, IM_SIZE_Y/2}, 
+    //         bot_pos[2] = {ai->st.old_scx, ai->st.old_scy}, 
+    //         target_pos[2] = {IM_SIZE_X, goal_center_y};
+    // double distance_err, lateral_err;
+    // finding_errors(ball_pos, bot_pos, target_pos, &distance_err, &lateral_err); // distance error is always positive
+    // double drive_straight_output = drive_straight_to_target_PID(distance_err); 
+    // double turn_align_output = align_straight_to_target_PID(lateral_err);
+    // printf("distance_err: %f  lateral_err:%f drive_straight_output: %f turn_align_output:%f\n", distance_err, lateral_err, drive_straight_output, turn_align_output); 
+    // fflush(stdout);
 
-    // BT_drive(LEFT_MOTOR, RIGHT_MOTOR, 50*drive_straight_output);			// Start forward motion to establish heading
-    BT_motor_port_start(RIGHT_MOTOR, 50*drive_straight_output + right_bias);  // set right motor speed
-    BT_motor_port_start(LEFT_MOTOR, 50*drive_straight_output + left_bais);  // set right motor speed
+    // double right_bias = -5 * turn_align_output, left_bais = 5 * turn_align_output;
+
+    // BT_motor_port_start(RIGHT_MOTOR, 50*drive_straight_output + right_bias);  // set right motor speed
+    // BT_motor_port_start(LEFT_MOTOR, 50*drive_straight_output + left_bais);  // set right motor speed
     // turn_to_target(ai->st.sdx, ai->st.sdy, target_heading_x, target_heading_y);
   }
   // turn PID
