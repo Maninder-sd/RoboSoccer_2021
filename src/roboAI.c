@@ -30,106 +30,8 @@
 
 #include "roboAI.h"			// <--- Look at this header file!
 #include "test.c"
+#include "linearFilter.c"
 
-#define INVALID_FILTER_VALUE FLT_MAX
-
-long unsigned int frame_count = 0;
-
-struct linear_filter_context {
-  double values[MAX_NUM_VALUES];
-  long unsigned int times[MAX_NUM_VALUES];
-  int filter_size;
-  int current_index;
-};
-
-static struct linear_filter_context self_bot_linear_filter_pos_x;
-
-void print_linear_filter(struct linear_filter_context* filter_struct) {
-  fprintf(stderr, "======= start print\n");
-  for (int i = 0; i < MAX_NUM_VALUES; i++) {
-    fprintf(stderr, "values: %f time: %ld\n", filter_struct->values[i], filter_struct->times[i]);
-  }
-}
-
-double apply_filter(struct linear_filter_context* filter_struct, double new_input) {
-  // add new input in correct position
-  filter_struct->values[filter_struct->current_index] = new_input;
-  filter_struct->times[filter_struct->current_index] = frame_count;
-  filter_struct->current_index = (filter_struct->current_index+1) % filter_struct->filter_size;
-  // compute denoised value
-  print_linear_filter(filter_struct);
-
-  double mean_y = 0, mean_time = 0;
-  int n=0;
-  for (int i = 0; i < filter_struct->filter_size; i++) {
-    if (filter_struct->values[i] != INVALID_FILTER_VALUE) {
-      mean_y += filter_struct->values[i];
-      mean_time += filter_struct->times[i];
-      n += 1;
-    }
-  }
-
-  if (n == 1) {
-    return new_input;
-  }
-
-  mean_y /= n;
-  mean_time /= n;
-  
-  double m_numer = 0, m_denom = 0;
-  for (int i = 0; i < filter_struct->filter_size; i++) {
-    if (filter_struct->values[i] != INVALID_FILTER_VALUE) {
-      double diff_y = filter_struct->values[i] - mean_y;
-      double diff_time = filter_struct->times[i] - mean_time;
-
-      m_numer += diff_y*diff_time;
-      m_denom += diff_time*diff_time;
-    }
-  }
-
-  double m = m_numer / m_denom;
-  double b = mean_y - m*mean_time;
-
-  double denoised_input = m*(frame_count+1) + b;
-
-  return denoised_input;
-}
-
-// TODO: initialize filter arrays
-void initialize_filter(struct linear_filter_context* filter_struct, int filter_size) {
-  filter_struct->filter_size = filter_size;
-  for (int i = 0; i < MAX_NUM_VALUES; i++) {
-    filter_struct->values[i] = INVALID_FILTER_VALUE;
-    filter_struct->times[i] = 0;
-  }
-
-  filter_struct->current_index = 0;
-}
-
-
-double dottie(double vx, double vy, double ux, double uy)
-{
- // Returns the dot product of the two vectors [vx,vy] and [ux,uy]
- return (vx*ux)+(vy*uy);
-}
-
-double crossie_sign(double vx, double vy, double ux, double uy)
-{
- // Returns the sign of the Z component of the cross product of 
- //   vectors [vx vy 0] and [ux uy 0]
- // MIND THE ORDER! v rotating onto u.     
- // i   j   k 
- // vx  vy  0
- // ux  uy  0
-    
- if ((vx*uy)-(ux*vy)<0) return -1;
- else return 1;
-}
-
-double get_standard_y_postioin(double y_postion)
-{
-  return IM_SIZE_Y - y_postion;
-}
 
 /**************************************************************
  * Display List Management - EXPERIMENTAL (you don't need this
@@ -705,9 +607,6 @@ void AI_calibrate(struct RoboAI *ai, struct blob *blobs)
  track_agents(ai,blobs);
 }
 
-double dot_prod(double vx,double vy,double wx, double wy) {
-    return vx*wx + vy*wy;
-}
 
 /* get angle for vectors origin->point1 and origin->point2 in range[0, 360]
  * NOTE: expects standard y-position, i.e y+ is up
@@ -744,24 +643,6 @@ double get_theta_from_alpha(double x) {
   } else {
     return (M_PI / 2) * (pow(fabs((1 / M_PI) * (x - M_PI)), n) - 1) * ((x - M_PI) / fabs(x - M_PI));
   }
-}
-
-inline double get_degrees_for_radians(double rads) {
-  return (rads / (2 * M_PI)) * 360;
-}
-
-
-double boundAngle0To360(double theta) {
-  if (theta >= M_PI*2) return theta-M_PI*2;
-  if (theta < 0) return theta + M_PI*2;
-  return theta;
-}
-
-//input theta in [-180 - 359, 180 + 360]
-double boundAngle180To180(double theta) {
-  if (theta > M_PI) return theta-M_PI*2;
-  if (theta <= -M_PI) return theta + M_PI*2;
-  return theta;
 }
 
 //TODO: if theta err is too high, turn on spot before resuming PID
@@ -838,22 +719,6 @@ double get_angle_btwn_vectors(double v1_x, double v1_y, double v2_x, double v2_y
   return atan2_angle;
 }
 
-double get_standard_angle_for_vector(double v1_x, double v1_y) {
-  static double STANDARD_X = 1, STANDARD_Y = 0;
-  return get_angle_btwn_vectors(v1_x, v1_y, STANDARD_X, STANDARD_Y);
-}
-
-struct pid_context_struct {
-  // weights for p.i.d TODO: needs fine-tuning
-  double k_p; 
-  double k_i; 
-  double k_d;
-  double input_scale;
-  double intergal_sum;
-  double current_proportion;
-  char valid_current_proportion;
-};
-
 double turn_on_spot_PID(double angle_error) {
 // TODO: use pid_context_struct
 
@@ -896,7 +761,6 @@ void turn_to_target(double current_heading_x, double current_heading_y, double t
 }
 
 
-double old_heading_x = 0, old_heading_y = 0;
 /**************************************************************************
  * AI state machine - this is where you will implement your soccer
  * playing logic
@@ -978,6 +842,12 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
   struct displayList *q;
   static char once_ran = 0;
   static double goal_center_x, goal_center_y;
+  static long unsigned int frame_count = 0;
+  static double old_heading_x = 0, old_heading_y = 0;
+
+  // denoising filters
+  static struct linear_filter_context self_bot_linear_filter_pos_x;
+
   
   // change to the ports representing the left and right motors in YOUR robot
   char lport=MOTOR_A;
@@ -986,7 +856,7 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
 
   if (!once_ran) {
     once_ran = 1;
-    initialize_filter(&self_bot_linear_filter_pos_x, 5); // TODO: make size arg into marco
+    initialize_filter(&self_bot_linear_filter_pos_x, AVG_FILTER_SIZE);
   }    
   /************************************************************
    * Standard initialization routine for starter code,
@@ -1087,7 +957,7 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
     }
      double ball_pos[2] = {IM_SIZE_X/2, IM_SIZE_Y/2}, 
             bot_pos[2] = {ai->st.old_scx, ai->st.old_scy}, 
-            target_pos[2] = {goal_center_x, goal_center_y};
+            target_pos[2] = {IM_SIZE_X, goal_center_y};
     double distance_err, lateral_err;
     finding_errors(ball_pos, bot_pos, target_pos, &distance_err, &lateral_err); // distance error is always positive
     double drive_straight_output = drive_straight_to_target_PID(distance_err); 
