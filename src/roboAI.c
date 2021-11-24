@@ -1074,6 +1074,30 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
    state transitions and with calling the appropriate function based on what
    the bot is supposed to be doing.
   *****************************************************************************/
+  int event = -1;
+  // if(ai->st.state == 101){ //  101 - if the bot is in PENALTY mode
+  //   ai->st.state = 2
+  // }else if(ai->st.state == 201){ //  201 - if the bot is in CHASE mode
+  //   ai->st.state = 3
+  // }
+  // //  1 - if the bot is in SOCCER mode
+  // //  2 - if the bot is in PENALTY mode
+  // //  3 - if the bot is in CHASE mode
+  // // THis is because we dont want our arrat
+
+
+  // Get current event
+  event = get_event(ai);
+  // Transition to next state
+  ai->st.state = get_new_state(ai->st.state, event);
+  // Action to do at that state
+  do_action(ai->st.state);
+  //
+
+  //get next state
+  
+  
+  
   // note our angles are expected to be in range [0, 360)
   // take out those unexpected angle changes
   if (ai->st.self != NULL) {
