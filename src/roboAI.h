@@ -26,9 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <float.h>
 
-#define MAX_NUM_VALUES 12
 
 //update to actual motors
 #define LEFT_MOTOR MOTOR_B
@@ -168,6 +166,15 @@ struct displayList *clearDP(struct displayList *head);
    Add headers for your own functions implementing the bot's soccer
    playing functionality below.
 *****************************************************************************/
-
+struct pid_context_struct {
+  // weights for p.i.d TODO: needs fine-tuning
+  double k_p; 
+  double k_i; 
+  double k_d;
+  double input_scale;
+  double intergal_sum;
+  double current_proportion;
+  char valid_current_proportion;
+};
 
 #endif
