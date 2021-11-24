@@ -978,14 +978,13 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
     double relative_curr_angle = get_curr_angle_from_line(ball_pos, target_pos, bot_pos);
     double angle_err = boundAngle180To180(relative_target_angle - relative_curr_angle);
 
-    //double turn_align_output = align_straight_to_target_PID(lateral_err);
-    printf("distance_err: %f  lateral_err:%f drive_straight_output: %f turn_align_output:%f\n", distance_err, lateral_err, drive_straight_output, turn_align_output); 
+    printf("distance_err: %f  lateral_err:%f drive_straight_output: %f \n", distance_err, lateral_err, drive_straight_output); 
     fflush(stdout);
 
     double max_speed = 50;
     
-    BT_drive(RIGHT_MOTOR, max_speed - (angle_err / pi)*max_speed);
-    BT_drive(LEFT_MOTOR, max_speed + (angle_err / pi)*max_speed);
+    BT_motor_port_start(RIGHT_MOTOR, max_speed - (angle_err / M_PI)*max_speed);
+    BT_motor_port_start(LEFT_MOTOR, max_speed + (angle_err / M_PI)*max_speed);
 
     //double right_bias = -5 * turn_align_output, left_bais = 5 * turn_align_output;
 
