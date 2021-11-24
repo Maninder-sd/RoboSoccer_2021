@@ -29,18 +29,35 @@
 ***************************************************************************/
 
 #include "roboAI.h"			// <--- Look at this header file!
+#include "test.c"
 
-#define INVALID_FILTER_VALUE 101010101.01
+#define INVALID_FILTER_VALUE FLT_MAX
 
-static struct linear_filter_context self_bot_linear_filter_pos_x;
 long unsigned int frame_count = 0;
 
+struct linear_filter_context {
+  double values[MAX_NUM_VALUES];
+  long unsigned int times[MAX_NUM_VALUES];
+  int filter_size;
+  int current_index;
+};
+
+static struct linear_filter_context self_bot_linear_filter_pos_x;
+
+void print_linear_filter(struct linear_filter_context* filter_struct) {
+  fprintf(stderr, "======= start print\n");
+  for (int i = 0; i < MAX_NUM_VALUES; i++) {
+    fprintf(stderr, "values: %f time: %ld\n", filter_struct->values[i], filter_struct->times[i]);
+  }
+}
 
 double apply_filter(struct linear_filter_context* filter_struct, double new_input) {
   // add new input in correct position
   filter_struct->values[filter_struct->current_index] = new_input;
   filter_struct->times[filter_struct->current_index] = frame_count;
+  filter_struct->current_index = (filter_struct->current_index+1) % filter_struct->filter_size;
   // compute denoised value
+  print_linear_filter(filter_struct);
 
   double mean_y = 0, mean_time = 0;
   int n=0;
@@ -51,6 +68,11 @@ double apply_filter(struct linear_filter_context* filter_struct, double new_inpu
       n += 1;
     }
   }
+
+  if (n == 1) {
+    return new_input;
+  }
+
   mean_y /= n;
   mean_time /= n;
   
@@ -69,23 +91,20 @@ double apply_filter(struct linear_filter_context* filter_struct, double new_inpu
   double b = mean_y - m*mean_time;
 
   double denoised_input = m*(frame_count+1) + b;
-  filter_struct->current_index = (filter_struct->current_index+1) % filter_struct->filter_size;
+
   return denoised_input;
 }
 
 // TODO: initialize filter arrays
-double initialize_filter(struct linear_filter_context* filter_struct, int filter_size) {
+void initialize_filter(struct linear_filter_context* filter_struct, int filter_size) {
   filter_struct->filter_size = filter_size;
   for (int i = 0; i < MAX_NUM_VALUES; i++) {
     filter_struct->values[i] = INVALID_FILTER_VALUE;
-    filter_struct->times[i] = INVALID_FILTER_VALUE;
+    filter_struct->times[i] = 0;
   }
 
   filter_struct->current_index = 0;
-  filter_struct->apply_filter = &apply_filter;
 }
-
-
 
 
 double dottie(double vx, double vy, double ux, double uy)
@@ -957,11 +976,18 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
   static int count=0;
   static double old_dx=0, old_dy=0;
   struct displayList *q;
+  static char once_ran = 0;
+  static double goal_center_x, goal_center_y;
   
   // change to the ports representing the left and right motors in YOUR robot
   char lport=MOTOR_A;
   char rport=MOTOR_B;
       
+
+  if (!once_ran) {
+    once_ran = 1;
+    initialize_filter(&self_bot_linear_filter_pos_x, 5); // TODO: make size arg into marco
+  }    
   /************************************************************
    * Standard initialization routine for starter code,
    * from state **0 performs agent detection and initializes
@@ -980,7 +1006,15 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
   id_bot(ai,blobs);
   if ((ai->st.state%100)!=0)	// The id_bot() routine will change the AI state to initial state + 1
   {				// if robot identification is successful.
-   if (ai->st.self->cx>=512) ai->st.side=1; else ai->st.side=0;
+  if (ai->st.self->cx>=512) {
+    ai->st.side=1;
+    goal_center_x = 0;
+    } else {
+      ai->st.side=0;
+      goal_center_x = IM_SIZE_X;
+    }
+    goal_center_y = IM_SIZE_Y / 2;
+
    BT_all_stop(0);
    
    fprintf(stderr,"Self-ID complete. Current position: (%f,%f), current heading: [%f, %f], blob direction=[%f, %f], AI state=%d\n",ai->st.self->cx,ai->st.self->cy,ai->st.smx,ai->st.smy,ai->st.sdx,ai->st.sdy,ai->st.state);
@@ -1017,7 +1051,6 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
    // Notice that the ball's blob direction is not useful! only its
    // position and motion matter.
 
-   initialize_filter(&self_bot_linear_filter_pos_x, 5); // TODO: make into marco
   }
      
  }
@@ -1041,25 +1074,32 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
    state transitions and with calling the appropriate function based on what
    the bot is supposed to be doing.
   *****************************************************************************/
-  printf("inside else\n");
   // note our angles are expected to be in range [0, 360)
   // take out those unexpected angle changes
   if (ai->st.self != NULL) {
-
-    // double denoised_pos_x = apply_filter(&self_bot_linear_filter_pos_x, ai->st.self->cx);
-
-    // printf("denoised_pos_x: %f, pos_x: %f\n", denoised_pos_x, ai->st.self->cx);
     // TODO: maybe move this into a function
-    // double angle_difference = dottie(ai->st.sdx, ai->st.sdy, old_heading_x, old_heading_y);
-    // if (angle_difference < 0) {
-    //   ai->st.sdx *= -1;
-    //   ai->st.sdy *= -1;
-    //   ai->st.self->dx *= -1;
-    //   ai->st.self->dy *= -1;
-    // }
-    
-    // double target_heading_x = 0, target_heading_y = -1; // fixed for now, TODO update to ball or some point
+    double angle_difference = dottie(ai->st.sdx, ai->st.sdy, old_heading_x, old_heading_y);
+    if (angle_difference < 0) {
+      ai->st.sdx *= -1;
+      ai->st.sdy *= -1;
+      ai->st.self->dx *= -1;
+      ai->st.self->dy *= -1;
+    }
+     double ball_pos[2] = {IM_SIZE_X/2, IM_SIZE_Y/2}, 
+            bot_pos[2] = {ai->st.old_scx, ai->st.old_scy}, 
+            target_pos[2] = {goal_center_x, goal_center_y};
+    double distance_err, lateral_err;
+    finding_errors(ball_pos, bot_pos, target_pos, &distance_err, &lateral_err); // distance error is always positive
+    double drive_straight_output = drive_straight_to_target_PID(distance_err); 
+    double turn_align_output = align_straight_to_target_PID(lateral_err);
+    printf("distance_err: %f  lateral_err:%f drive_straight_output: %f turn_align_output:%f\n", distance_err, lateral_err, drive_straight_output, turn_align_output); 
+    fflush(stdout);
 
+    double right_bias = -5 * turn_align_output, left_bais = 5 * turn_align_output;
+
+    // BT_drive(LEFT_MOTOR, RIGHT_MOTOR, 50*drive_straight_output);			// Start forward motion to establish heading
+    BT_motor_port_start(RIGHT_MOTOR, 50*drive_straight_output + right_bias);  // set right motor speed
+    BT_motor_port_start(LEFT_MOTOR, 50*drive_straight_output + left_bais);  // set right motor speed
     // turn_to_target(ai->st.sdx, ai->st.sdy, target_heading_x, target_heading_y);
   }
   // turn PID

@@ -25,7 +25,8 @@
 #include "API/btcomm.h"
 #include <stdio.h>
 #include <stdlib.h>
-// #include <cfloat>
+#include <assert.h>
+#include <float.h>
 
 #define MAX_NUM_VALUES 12
 
@@ -168,12 +169,5 @@ struct displayList *clearDP(struct displayList *head);
    playing functionality below.
 *****************************************************************************/
 
-struct linear_filter_context {
-  double values[MAX_NUM_VALUES];
-  double times[MAX_NUM_VALUES];
-  int filter_size;
-  int current_index;
-  double (*apply_filter)(struct linear_filter_context* filter_struct, double new_input);
-};
 
 #endif
