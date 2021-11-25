@@ -22,8 +22,16 @@ double magnitude_vector(double v[2])
     return sqrt(dottie_vector(v, v));
 }
 
+
+double getAngle_vector(double u[2] , double v[2])
+{
+    // Returns the dot product of the two vectors
+    return acos(dottie_vector(u, v) / sqrt(dottie_vector(u, u)* dottie_vector(v, v)));
+}
+
 #define STOP_BOT 7
 #define GOOD_BALL_DIST 100
+
 
 
 
@@ -41,15 +49,7 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
 
     static double targetP[2] = {-1, -1};
 
-    // targetP[0] = (ai->st.side == 0) ? targetP[0] - GOOD_BALL_DIST : targetP[0] + GOOD_BALL_DIST; // add a bit to x distance
-
-    double bot_to_targetP_vector[2] = {targetP[0] - ai->st.old_scx, targetP[1] - ai->st.old_scy};
-    double bot_to_targetP_dist = magnitude_vector(bot_to_targetP_vector);
-
-    double bot_to_ball_vector[2] = {ballPos[0] - botPos[0], ballPos[1] - botPos[1]};
-    double bot_to_ball_dist = magnitude_vector(bot_to_ball_vector);
-
-    if (targetP[0] == -1 && targetP[1] == -1 ) {      
+    
       double goal_to_ball[2] = {ballPos[0]- goalPos[0], ballPos[1] - goalPos[1] };
       double magnitude = magnitude_vector(goal_to_ball);
       // make it vector of magnitude GOOD_BALL_DIST in the balls direction
@@ -61,9 +61,109 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
       targetP[1] = ballPos[1] + goal_to_ball[1];
 
 
-        // targetP[0] = (ai->st.side == 0) ? ballPos[0] - GOOD_BALL_DIST : ballPos[0] + GOOD_BALL_DIST;
-        // targetP[1] = ballPos[1];
+    double bot_to_ball_vector[2] = {ballPos[0] - botPos[0], ballPos[1] - botPos[1]};
+    double bot_to_ball_dist = magnitude_vector(bot_to_ball_vector);
+    
+    double bot_to_targetP_vector[2] = {targetP[0] - ai->st.old_scx, targetP[1] - ai->st.old_scy};
+    double bot_to_targetP_dist = magnitude_vector(bot_to_targetP_vector);
+
+
+    double bot_to_targetP_angle = getAngle_vector(bot_to_targetP_vector, botHeading);
+    // acos(dottie_vector(bot_to_targetP_vector, botHeading) / sqrt(dottie_vector(bot_to_targetP_vector, bot_to_targetP_vector)* dottie_vector(botHeading, botHeading)));
+
+    double bot_to_ball_angle = getAngle_vector(bot_to_ball_vector, botHeading); 
+    // acos(dottie_vector(bot_to_ball_vector, botHeading) / sqrt(dottie_vector(bot_to_ball_vector, bot_to_ball_vector)* dottie_vector(botHeading, botHeading)));
+
+        // printf("theta: %f\n", theta);
+
+    switch (old_state){
+        case 201: {
+            
+            //action
+
+            if( fabs(bot_to_targetP_angle) > 1){ //more than 60 deg
+                return 202;
+            }else{
+                return 203;
+            }
+        }
+        case 202: {
+
+            //rotation PID
+            int done_turning = turn_to_target(botHeading[0], botHeading[1], bot_to_targetP_vector[0], bot_to_targetP_vector[1]);
+
+            // if( fabs(bot_to_targetP_angle) < 0.3){ // less than 17 deg
+            if(done_turning){
+                BT_all_stop(1);
+                return 203;
+            }else{
+                return 202;
+            } 
+        }
+        case 203: {
+
+            //Run PID to targetP - should be able to turn a bit as well
+            BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, 25);
+
+            if(bot_to_targetP_dist < 100){ //next state
+                BT_all_stop(0);
+                return 204;
+            }else if ( fabs(bot_to_targetP_angle) > 1){ // more than 60 deg
+                BT_all_stop(0);
+                return 202;
+            }else{
+                return 203;
+            }
+            
+        }
+        case 204: {
+
+            //rotation PID
+            int done_turning = turn_to_target(botHeading[0], botHeading[1], bot_to_ball_vector[0], bot_to_ball_vector[1]);
+
+            // if( fabs(bot_to_targetP_angle) < 0.3){ // less than 17 deg
+            if(done_turning){
+                BT_all_stop(1);
+                return 205;
+            }else{
+                return 204;
+            } 
+
+            
+        }
+        case 205: {
+            //Run PID to targetP - should be able to turn a bit as well
+            BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, 25);
+
+            if(bot_to_ball_dist < 100){ //next state
+                BT_all_stop(0);
+                return 206;
+            }else if ( fabs(bot_to_ball_angle) > 1){ // more than 60 deg
+                BT_all_stop(0);
+                return 201 // reset entire thing;
+            }else{
+                return 205;
+            }
+
+        }
+        case 206: {
+            BT_all_stop(0);
+
+            if(bot_to_ball_dist > 200){ 
+                BT_all_stop(0);
+                return 205; //start pid again
+            }else{
+                return 206;
+            }
+
+            return 206; //stay in 206
+        }
+
+        return 201;
     }
+
+
+
 
     switch (old_state)
     {
