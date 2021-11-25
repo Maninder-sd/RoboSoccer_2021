@@ -842,7 +842,7 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
             
             //action
 
-            if( fabs(bot_to_targetP_angle) > 1){ //more than 60 deg
+            if( fabs(bot_to_targetP_angle) > 0.1){ //more than 60 deg
                 return 202;
             }else{
                 return 203;
@@ -1282,7 +1282,7 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
   
   // note our angles are expected to be in range [0, 360)
   // take out those unexpected angle changes
-  if (ai->st.self != NULL) {
+  if (ai->st.self != NULL && ai->st.ball != NULL) {
     // TODO: maybe move this into a function
     double angle_difference = dottie(ai->st.sdx, ai->st.sdy, old_heading_x, old_heading_y);
     if (angle_difference < 0) {
