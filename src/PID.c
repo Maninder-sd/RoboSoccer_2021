@@ -5,6 +5,8 @@
 #ifndef _PID_C
 #define _PID_C
 
+#include "roboAI.h"
+
 double turn_on_spot_PID(double angle_error);
 int turn_to_target(double current_heading_x, double current_heading_y, double target_heading_x, double target_heading_y);
 
@@ -39,18 +41,18 @@ double turn_on_spot_PID(double angle_error) {
  * Returns angle error between the two vectors put in
  */
 int turn_to_target(double current_heading_x, double current_heading_y, double target_heading_x, double target_heading_y) {
-  printf("current_heading_x: %f  current_heading_y: %f\n", current_heading_x, current_heading_y);
+  // printf("current_heading_x: %f  current_heading_y: %f\n", current_heading_x, current_heading_y);
 
   double current_heading_standard_angle = get_standard_angle_for_vector(current_heading_x, current_heading_y);
   double target_heading_standard_angle = get_standard_angle_for_vector(target_heading_x, target_heading_y);
-  printf("current_heading_standard_angle: %f  target_heading_standard_angle: %f\n", current_heading_standard_angle, target_heading_standard_angle);
+  // printf("current_heading_standard_angle: %f  target_heading_standard_angle: %f\n", current_heading_standard_angle, target_heading_standard_angle);
 
   double angle_error = boundAngle180To180(target_heading_standard_angle - current_heading_standard_angle);
   printf("angle_error: %f\n", angle_error);
   double pid_out = turn_on_spot_PID(angle_error);
   double MAX_SPEED = 100;
   int motor_out = round(pid_out * MAX_SPEED);
-  printf("motor_out: %d\n", motor_out);
+  // printf("motor_out: %d\n", motor_out);
 
   fflush(stdout); 
 

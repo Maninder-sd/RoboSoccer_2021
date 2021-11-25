@@ -6,6 +6,7 @@
 #define _FSM_C
 
 #include "roboAI.h"
+#include "PID.c"
 
 
 int get_new_state_Chase(struct RoboAI *ai, int old_state);
@@ -15,11 +16,12 @@ int get_new_state_Penalty (struct RoboAI *ai, int old_state);
 // TODO: move to header
 #define STOP_BOT 106
 #define GOOD_BALL_DIST 100
+#define ANGLE_RESET 0.5 //this is for Chase FSM
 
 
 #define KICK_SPEED 80
 
-int get_new_state_Chase_new(struct RoboAI *ai, int old_state){
+int get_new_state_Chase_old(struct RoboAI *ai, int old_state){
     // todo: redundant state
     // call when in chase  mode
     double ballPos[2] = {ai->st.old_bcx, ai->st.old_bcy};
@@ -220,7 +222,7 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
             if(bot_to_targetP_dist < 100){ //next state
                 BT_all_stop(0);
                 return 204;
-            }else if ( fabs(bot_to_targetP_angle) > 0.1){ // more than 60 deg
+            }else if ( fabs(bot_to_targetP_angle) > ANGLE_RESET){ // more than 60 deg
                 BT_all_stop(0);
                 return 202;
             }else{
@@ -247,11 +249,12 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
             //Run PID to targetP - should be able to turn a bit as well
             BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, 60);
             BT_motor_port_start(MOTOR_C, -100);
+            printf("bot_to_ball_dist %f \n",bot_to_ball_dist);
 
-            if(bot_to_ball_dist < 100){ //next state
+            if(bot_to_ball_dist > 200){ //next state
                 BT_all_stop(0);
                 return 206;
-            }else if ( fabs(bot_to_ball_angle) > 0.1){ // more than 60 deg
+            }else if ( fabs(bot_to_ball_angle) > ANGLE_RESET){ // more than 60 deg
                 BT_all_stop(0);
                 return 201; // reset entire thing;
             }else{
