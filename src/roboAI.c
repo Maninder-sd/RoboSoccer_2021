@@ -624,8 +624,9 @@ void AI_calibrate(struct RoboAI *ai, struct blob *blobs)
  * NOTE: expects standard y-position, i.e y+ is up
  * so you cannnot just directly plug in positions of agents from state
 **/
-double get_angle(double origin_x, double origin_y, double point1_x, double point1_y, double point2_x, double point2_y)
+double get_angle_failure(double origin_x, double origin_y, double point1_x, double point1_y, double point2_x, double point2_y)
 {
+  // THis from last progress report, isnt used by new code
     
     double centered_rx = point1_x - origin_x, centered_ry = point1_y - origin_y;
     double centered_tx = point2_x - origin_x, centered_ty = point2_y - origin_y;
@@ -641,7 +642,8 @@ double get_angle(double origin_x, double origin_y, double point1_x, double point
     return atan2_angle;
 }
 
-double get_theta_from_alpha(double x) {
+double get_theta_from_alpha_failure(double x) {
+  // THis from last progress report, isnt used by new code
   // x in the alpha
   x = (M_PI - x);
   if (x < 0) {
@@ -658,8 +660,8 @@ double get_theta_from_alpha(double x) {
 }
 
 //TODO: if theta err is too high, turn on spot before resuming PID
-void align_bot_PID(double alpha, double theta) {
-
+void align_bot_PID_failure(double alpha, double theta) {
+  // THis from last progress report
   double theta_target = get_theta_from_alpha(alpha);
   double theta_err = boundAngle180To180(boundAngle0To360(theta_target) - boundAngle0To360(theta));
   double alpha_err = M_PI - alpha;  // target is M_PI
@@ -789,7 +791,8 @@ void print_denoised_self_bot() {
 }
 
 
-int get_new_state_Penalty(struct RoboAI *ai, int old_state){
+int get_new_state_Penalty_old(struct RoboAI *ai, int old_state){
+    // We can  import new fsm from FSM.C 
     // Find event based on the info in RoboAI ai struct (maybe also old_state)
     // call when in penalty mode
     double ballPos[2] = {ai->st.old_bcx, ai->st.old_bcy};
@@ -1154,7 +1157,7 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
     if ( 100< ai->st.state  && ai->st.state < 200){
       ai->st.state = get_new_state_Penalty(ai, ai->st.state);
     }else if ( 200< ai->st.state  ){
-      // ai->st.state = get_new_state_Chase(ai, ai->st.state);
+      ai->st.state = get_new_state_Chase(ai, ai->st.state);
     }
     
     //  double ball_pos[2] = {IM_SIZE_X-1, IM_SIZE_Y/2}, 

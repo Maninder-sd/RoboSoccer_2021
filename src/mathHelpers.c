@@ -1,6 +1,26 @@
+#ifndef _MATHHELPERS_C
+#define _MATHHELPERS_C
+
 #include <math.h>
 #define IM_SIZE_X 1024
 #define IM_SIZE_Y 768
+
+
+
+inline double dottie(double vx, double vy, double ux, double uy);
+inline double crossie_sign(double vx, double vy, double ux, double uy);
+inline double get_standard_y_postioin(double y_postion);
+inline double dot_prod(double vx,double vy,double wx, double wy);
+inline double get_degrees_for_radians(double rads);
+inline double boundAngle0To360(double theta);
+//input theta in [-180 - 359, 180 + 360]
+inline double boundAngle180To180(double theta);
+double get_angle_btwn_vectors(double v1_x, double v1_y, double v2_x, double v2_y) ;
+inline double get_standard_angle_for_vector(double v1_x, double v1_y);
+double magnitude_vector(double v[2]);
+double getAngle_vector(double u[2] , double v[2]);
+
+
 
 
 inline double dottie(double vx, double vy, double ux, double uy)
@@ -65,3 +85,17 @@ inline double get_standard_angle_for_vector(double v1_x, double v1_y) {
   static double STANDARD_X = 1, STANDARD_Y = 0;
   return get_angle_btwn_vectors(v1_x, v1_y, STANDARD_X, STANDARD_Y);
 }
+
+
+double magnitude_vector(double v[2]){
+    // Returns the dot product of the two vectors
+    return sqrt(dottie_vector(v, v));
+}
+
+double getAngle_vector(double u[2] , double v[2]){
+    // Returns the dot product of the two vectors
+    return acos(dottie_vector(u, v) / sqrt(dottie_vector(u, u)* dottie_vector(v, v)));
+}
+
+
+#endif
