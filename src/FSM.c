@@ -36,6 +36,7 @@ double getAngle_vector(double u[2] , double v[2])
 
 
 int get_new_state_Chase(struct RoboAI *ai, int old_state){
+    // todo: redundant state
     // Find event based on the info in RoboAI ai struct (maybe also old_state)
     // call when in penalty mode
     double ballPos[2] = {ai->st.old_bcx, ai->st.old_bcy};
@@ -133,7 +134,8 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
         }
         case 205: {
             //Run PID to targetP - should be able to turn a bit as well
-            BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, 25);
+            BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, 60);
+            BT_motor_port_start(MOTOR_C, -100);
 
             if(bot_to_ball_dist < 100){ //next state
                 BT_all_stop(0);
