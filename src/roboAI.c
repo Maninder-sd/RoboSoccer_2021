@@ -636,15 +636,15 @@ void print_denoised_self_bot() {
 * rotates based on image coordinates, going down -> y increases
 * updates vector passed in
 */
-void rotate_vector(double* x, double* y, double angle)
+void rotate_vector(double* x, double* y, double angle_deg)
 {
+    double radians = -(angle_deg * (M_PI / 180));
     double initial_x = *x, initial_y = *y;
-    double new_heading_x = (initial_xx*cos(angle)) - (initial_y*sin(angle)),
-            new_heading_y =  ((initial_x*sin(angle)) + (initial_y*cos(angle)));
+    double new_heading_x = (initial_x*cos(radians)) - (initial_y*sin(radians)),
+            new_heading_y =  ((initial_x*sin(radians)) + (initial_y*cos(radians)));
             
     *x = new_heading_x;
     *y = new_heading_y;
-    return 0;
 }
 /**************************************************************************
  * AI state machine - this is where you will implement your soccer
@@ -729,7 +729,7 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
   static double goal_center_x, goal_center_y;
   static long unsigned int frame_count = 0;
   static double old_heading_x = 0, old_heading_y = 0;
-  static double initial_gyro_angle = 0;
+  static int initial_gyro_angle = 0;
   static double initial_heading_x = -1, initial_heading_y = -1;
 
   // denoising filters
@@ -804,7 +804,10 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
        old_dy=ai->st.sdy;
        initial_heading_x = ai->st.sdx;
        initial_heading_y = ai->st.sdy;
+        // printf("initial: headingDir_x %f headingDir_y %f\n ", initial_heading_x,initial_heading_y);
        initial_gyro_angle = BT_read_gyro_sensor(GYRO_PORT);
+          //  printf("initial_gyro_angle reading: %d\n", initial_gyro_angle);
+
    }
    if (ai->st.opp!=NULL)
    {
@@ -857,13 +860,17 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
       ai->st.sdy *= -1;
       ai->st.self->dx *= -1;
       ai->st.self->dy *= -1;
-      printf("before: headingDir_x %f headingDir_y %f\n ", ai->st.sdx,ai->st.sdy);
     }
+      // printf("before: headingDir_x %f headingDir_y %f\n ", ai->st.sdx,ai->st.sdy);
     double our_heading_x = initial_heading_x, our_heading_y = initial_heading_y;
-    double current_gyro_reading = BT_read_gyro_sensor(GYRO_PORT);
-    double gyro_angle_change = initial_gyro_angle - current_gyro_reading;
+    int current_gyro_reading = BT_read_gyro_sensor(GYRO_PORT);
+    // printf("gryo reading: %d\n", current_gyro_reading);
+    double gyro_angle_change = (double)(initial_gyro_angle - current_gyro_reading);
     rotate_vector(&our_heading_x, &our_heading_y, gyro_angle_change);
-      printf("after: headingDir_x %f headingDir_y %f\n ", our_heading_x, our_heading_y);
+    ai->st.sdx = our_heading_x;
+    ai->st.sdy  = our_heading_y;
+    // TODO: clean up here and also set self->dx and dy
+      printf("state: %d headingDir_x %f headingDir_y %f\n ", ai->st.state,  our_heading_x, our_heading_y);
     // printf("scx: %f scy: %f", ai->st.old_scx, ai->st.old_scy);
     if ( 100< ai->st.state  && ai->st.state < 200){
       ai->st.state = get_new_state_Penalty(ai, ai->st.state);

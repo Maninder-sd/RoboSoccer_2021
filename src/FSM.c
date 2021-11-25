@@ -25,8 +25,8 @@ int get_new_state_soccer(struct RoboAI *ai, int old_state) {
     static double opponent[2];
 
     if (ai->st.opp) {
-        opponent[0] = ai->st.opp->cx;
-        opponent[1] = ai->st.opp->cy;
+        opponent[0] = ai->st.old_ocx;
+        opponent[1] = ai->st.old_ocy;
     }
 
 
@@ -301,7 +301,8 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
         double distance_err, lateral_err;
         finding_errors(ballPos, targetP, goalPos, &distance_err, &lateral_err); // distance error is always positive
         double drive_straight_output = drive_straight_to_target_PID(distance_err); 
-        BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, drive_straight_output);
+
+        BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, 50*drive_straight_output);
 
             if(bot_to_targetP_dist < 100){ //next state
                 BT_all_stop(0);
@@ -429,6 +430,7 @@ int get_new_state_Penalty (struct RoboAI *ai, int old_state){
         double distance_err, lateral_err;
         finding_errors(ballPos, targetP, goalPos, &distance_err, &lateral_err); // distance error is always positive
         double drive_straight_output = drive_straight_to_target_PID(distance_err); 
+        // printf("drive_straight_output: %f\n", drive_straight_output);
         BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, drive_straight_output);
 
             if(bot_to_targetP_dist < 100){ //next state
