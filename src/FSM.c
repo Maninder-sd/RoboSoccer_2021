@@ -61,7 +61,7 @@ int get_new_state_Chase_new(struct RoboAI *ai, int old_state){
             
             //action
 
-            if( fabs(bot_to_targetP_angle) > 1){ //more than 60 deg
+            if( fabs(bot_to_targetP_angle) > 0.1){ //more than 60 deg
                 return 202;
             }else{
                 return 203;
@@ -88,7 +88,7 @@ int get_new_state_Chase_new(struct RoboAI *ai, int old_state){
             if(bot_to_targetP_dist < 100){ //next state
                 BT_all_stop(0);
                 return 204;
-            }else if ( fabs(bot_to_targetP_angle) > 1){ // more than 60 deg
+            }else if ( fabs(bot_to_targetP_angle) > 0.1){ // more than 60 deg
                 BT_all_stop(0);
                 return 202;
             }else{
@@ -119,7 +119,7 @@ int get_new_state_Chase_new(struct RoboAI *ai, int old_state){
             if(bot_to_ball_dist < 100){ //next state
                 BT_all_stop(0);
                 return 206;
-            }else if ( fabs(bot_to_ball_angle) > 1){ // more than 60 deg
+            }else if ( fabs(bot_to_ball_angle) > 0.1){ // more than 60 deg
                 BT_all_stop(0);
                 return 201; // reset entire thing;
             }else{
@@ -193,7 +193,7 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
             
             //action
 
-            if( fabs(bot_to_targetP_angle) > 1){ //more than 60 deg
+            if( fabs(bot_to_targetP_angle) > 0.1){ //more than 60 deg
                 return 202;
             }else{
                 return 203;
@@ -220,7 +220,7 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
             if(bot_to_targetP_dist < 100){ //next state
                 BT_all_stop(0);
                 return 204;
-            }else if ( fabs(bot_to_targetP_angle) > 1){ // more than 60 deg
+            }else if ( fabs(bot_to_targetP_angle) > 0.1){ // more than 60 deg
                 BT_all_stop(0);
                 return 202;
             }else{
@@ -251,7 +251,7 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
             if(bot_to_ball_dist < 100){ //next state
                 BT_all_stop(0);
                 return 206;
-            }else if ( fabs(bot_to_ball_angle) > 1){ // more than 60 deg
+            }else if ( fabs(bot_to_ball_angle) > 0.1){ // more than 60 deg
                 BT_all_stop(0);
                 return 201; // reset entire thing;
             }else{
