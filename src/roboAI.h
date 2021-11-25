@@ -31,6 +31,7 @@
 //update to actual motors
 #define LEFT_MOTOR MOTOR_B
 #define RIGHT_MOTOR MOTOR_A
+#define GYRO_PORT PORT_1
 
 #define IM_SIZE_X 1024
 #define IM_SIZE_Y 768
