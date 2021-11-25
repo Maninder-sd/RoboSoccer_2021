@@ -2,11 +2,11 @@
 #include <math.h>
 #include <stdio.h>
 
-static inline double det(double a_x, double a_y, double b_x, double b_y) {
+static double det(double a_x, double a_y, double b_x, double b_y) {
   return a_x * b_y - a_y * b_x;
 }
 
-static inline double crossie_sign2(double vx, double vy, double ux, double uy)
+static double crossie_sign_2(double vx, double vy, double ux, double uy)
 {
  // Returns the sign of the Z component of the cross product of 
  //   vectors [vx vy 0] and [ux uy 0]
@@ -19,68 +19,12 @@ static inline double crossie_sign2(double vx, double vy, double ux, double uy)
  else return 1;
 }
 
-static inline double dottie_vector(double v[2], double u[2])
+static double dottie_vector(double v[2], double u[2])
 {
  // Returns the dot product of the two vectors 
  return (v[0]*u[0])+(v[1]*u[1]);
 }
 
-static inline double boundAngle0To360_2(double theta) {
-  if (theta >= M_PI*2) return theta-M_PI*2;
-  if (theta < 0) return theta + M_PI*2;
-  return theta;
-}
-
-
-static inline double dottie2(double vx, double vy, double ux, double uy)
-{
- // Returns the dot product of the two vectors [vx,vy] and [ux,uy]
- return (vx*ux)+(vy*uy);
-}
-
-static double get_magnitude(double x, double y) {
-  return pow(x*x + y*y, .5);
-}
-
-static double get_signed_angle_from_vectors(double ux, double uy, double vx, double vy) {
-  return crossie_sign2(ux, uy, vx, vy) *
-      acos(dottie2(ux, uy, vx, vy) /
-         (get_magnitude(ux, uy) *
-         get_magnitude(vx, vy)));
-}
-
-static double get_curr_angle_from_line(double ball_pos[2], double target_pos[2], double dx, double dy) {
-  double ball_to_goal[2];
-    ball_to_goal[0] =  target_pos[0] -ball_pos[0];
-    ball_to_goal[1] =  target_pos[1] -ball_pos[1];
-
-    double curr_angle_signed = get_signed_angle_from_vectors(dx, dy, ball_to_goal[0], ball_to_goal[1]);
-    return boundAngle0To360_2(curr_angle_signed);
-
-}
-
-static double get_target_angle_from_line(double lateral_err, double ball_pos[2], double target_pos[2]) {
-
-  double k1 = .2;
-
-  if (lateral_err == 0) {
-
-  }
-  double relative_target_x_heading = (1 / (fabs(lateral_err) + (lateral_err == 0))) + (lateral_err == 0);
-  // ouble relative_target_x_heading = (1 / (fabs(lateral_err) + (lateral_err == 0))) + (lateral_err == 0);
-  double relative_target_y_heading = (fabs(lateral_err)/lateral_err)*k1;
-
-  double ball_to_goal[2];
-  ball_to_goal[0] =  target_pos[0] -ball_pos[0];
-  ball_to_goal[1] =  target_pos[1] -ball_pos[1];
-
-  double target_angle_signed = get_signed_angle_from_vectors(relative_target_x_heading, relative_target_y_heading,
-      ball_to_goal[0], ball_to_goal[1]);
-
-  return  boundAngle0To360_2(target_angle_signed);
-
-
-}
 
 void finding_errors( double ball_pos[2], double bot_pos[2], double target_pos[2] , double * distance_err, double* lateral_err){
 
@@ -97,7 +41,7 @@ void finding_errors( double ball_pos[2], double bot_pos[2], double target_pos[2]
     double projected_dist= dottie_vector(ball_to_goal, bot_to_ball) / sqrt(dottie_vector(ball_to_goal, ball_to_goal));
 
     *lateral_err = sqrt((*distance_err)*(*distance_err) - projected_dist*projected_dist)
-      * crossie_sign2(ball_to_goal[0], ball_to_goal[1], bot_to_ball[0], bot_to_ball[1]);
+      * crossie_sign_2(ball_to_goal[0], ball_to_goal[1], bot_to_ball[0], bot_to_ball[1]);
 
 }
 

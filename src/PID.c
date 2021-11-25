@@ -1,3 +1,7 @@
+/****
+ This file contains logic for the PIDS (rotation and straight)
+****/
+
 #ifndef _PID_C
 #define _PID_C
 

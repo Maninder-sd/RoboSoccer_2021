@@ -1,22 +1,19 @@
+/****
+ This file contains logic for the FSMs
+****/
 
 #ifndef _FSM_C
 #define _FSM_C
 
+#include "roboAI.h"
 
-
-/****
- This file contains logic to :
-    1) Find event based on the info in RoboAI ai struct (maybe also old_state)
-    2) Given (old_state, event) -> gets next state
-    3) Given (state) -> gets action function 
-****/
 
 int get_new_state_Chase(struct RoboAI *ai, int old_state);
 int get_new_state_Penalty (struct RoboAI *ai, int old_state);
 
 
-
-#define STOP_BOT 7
+// TODO: move to header
+#define STOP_BOT 106
 #define GOOD_BALL_DIST 100
 
 

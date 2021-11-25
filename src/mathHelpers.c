@@ -1,3 +1,7 @@
+/****
+ This file contains all the math helper functions we made
+****/
+
 #ifndef _MATHHELPERS_C
 #define _MATHHELPERS_C
 
