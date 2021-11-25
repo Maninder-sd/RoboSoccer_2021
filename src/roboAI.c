@@ -715,7 +715,7 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
   static double goal_center_x, goal_center_y;
   static long unsigned int frame_count = 0;
   static double old_heading_x = 0, old_heading_y = 0;
-
+  static double initial_gyro_angle = 0;
   // denoising filters
   static struct linear_filter_context self_bot_linear_filter_pos_x;
   static struct linear_filter_context self_bot_linear_filter_pos_y;
