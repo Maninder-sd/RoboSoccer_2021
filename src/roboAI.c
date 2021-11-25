@@ -33,6 +33,18 @@
 #include "linearFilter.c"
 #include "mathHelpers.c"
 
+
+
+// TODO: move to header
+#define STOP_BOT 7
+#define GOOD_BALL_DIST 100
+
+// TODO: move to math helper
+double magnitude_vector(double v[2])
+{
+    // Returns the dot product of the two vectors
+    return sqrt(dottie_vector(v, v));
+}
 /**************************************************************
  * Display List Management - EXPERIMENTAL (you don't need this
  * to solve your RoboSoccer project). The Display List is an
@@ -729,7 +741,10 @@ double turn_on_spot_PID(double angle_error) {
   }
 }
 
-void turn_to_target(double current_heading_x, double current_heading_y, double target_heading_x, double target_heading_y) {
+/**
+ * Returns angle error between the two vectors put in
+ */
+int turn_to_target(double current_heading_x, double current_heading_y, double target_heading_x, double target_heading_y) {
   printf("current_heading_x: %f  current_heading_y: %f\n", current_heading_x, current_heading_y);
 
   double current_heading_standard_angle = get_standard_angle_for_vector(current_heading_x, current_heading_y);
@@ -737,14 +752,25 @@ void turn_to_target(double current_heading_x, double current_heading_y, double t
   printf("current_heading_standard_angle: %f  target_heading_standard_angle: %f\n", current_heading_standard_angle, target_heading_standard_angle);
 
   double angle_error = boundAngle180To180(target_heading_standard_angle - current_heading_standard_angle);
+  printf("angle_error: %f\n", angle_error);
   double pid_out = turn_on_spot_PID(angle_error);
   double MAX_SPEED = 100;
   int motor_out = round(pid_out * MAX_SPEED);
   printf("motor_out: %d\n", motor_out);
 
   fflush(stdout); 
-  BT_motor_port_start(LEFT_MOTOR, -1 * motor_out);  
-  BT_motor_port_start(RIGHT_MOTOR, motor_out);  
+
+  if (fabs(angle_error) < 0.15)
+  {             //event = facing ball
+    printf("condition met\n");
+    BT_motor_port_stop(LEFT_MOTOR, 1);
+    BT_motor_port_stop(RIGHT_MOTOR, 1); 
+    return 1;
+  } else {
+    BT_motor_port_start(LEFT_MOTOR, -1 * motor_out);  
+    BT_motor_port_start(RIGHT_MOTOR, motor_out);  
+    return 0;
+  }
 }
 
 void print_denoised_self_bot() {
@@ -761,6 +787,161 @@ void print_denoised_self_bot() {
     // printf("sdy ");
     // double denoised_sdy = apply_filter(&self_bot_linear_filter_heading_y, ai->st.sdy, frame_count);
 }
+
+
+int get_new_state_Penalty(struct RoboAI *ai, int old_state){
+    // Find event based on the info in RoboAI ai struct (maybe also old_state)
+    // call when in penalty mode
+    double ballPos[2] = {ai->st.old_bcx, ai->st.old_bcy};
+    double botHeading[2] = {ai->st.sdx, ai->st.sdy};
+    double botPos[2] = {ai->st.old_scx, ai->st.old_scy};
+    double goalPos[2];
+    // side=0 implies the robot's own side is the left side
+    // side=1 implies the robot's own side is the right side
+    goalPos[0] = (ai->st.side == 0) ? IM_SIZE_X : 0; //gets the enemy goal
+    goalPos[1] = IM_SIZE_Y / 2;
+
+    static double targetP[2] = {-1, -1};
+
+    // targetP[0] = (ai->st.side == 0) ? targetP[0] - GOOD_BALL_DIST : targetP[0] + GOOD_BALL_DIST; // add a bit to x distance
+
+    double bot_to_targetP_vector[2] = {targetP[0] - ai->st.old_scx, targetP[1] - ai->st.old_scy};
+    double bot_to_targetP_dist = magnitude_vector(bot_to_targetP_vector);
+
+    double bot_to_ball_vector[2] = {ballPos[0] - botPos[0], ballPos[1] - botPos[1]};
+    double bot_to_ball_dist = magnitude_vector(bot_to_ball_vector);
+
+    if (targetP[0] == -1 && targetP[1] == -1 ) {      
+      double goal_to_ball[2] = {ballPos[0]- goalPos[0], ballPos[1] - goalPos[1] };
+      double magnitude = magnitude_vector(goal_to_ball);
+      // make it vector of magnitude GOOD_BALL_DIST in the balls direction
+      goal_to_ball[0] = GOOD_BALL_DIST * goal_to_ball[0] / magnitude;
+      goal_to_ball[1] = GOOD_BALL_DIST * goal_to_ball[1] / magnitude;
+      
+      // target = ball + offset in ball's direction
+      targetP[0] = ballPos[0] + goal_to_ball[0];
+      targetP[1] = ballPos[1] + goal_to_ball[1];
+
+
+        // targetP[0] = (ai->st.side == 0) ? ballPos[0] - GOOD_BALL_DIST : ballPos[0] + GOOD_BALL_DIST;
+        // targetP[1] = ballPos[1];
+    }
+
+    switch (old_state)
+    {
+    case 2: { // Penalty
+        return 3;
+
+     if (ai->st.self==NULL)                                         
+        {
+            return STOP_BOT;
+        }
+
+        // double bot_to_ball_dist ;
+        double bot_to_line_dist;
+
+        // finding_errors(ballPos, bot_pos, goalPos, &bot_to_ball_dist, &bot_to_line_dist);
+
+        break;
+    }
+    case 3: {// is it facing the target_p?
+     if (ai->st.self==NULL)                                         
+        { //NULL check
+            return STOP_BOT;
+        }
+
+        //   int ballPos[2]= {ai->st.old_bcx, ai->st.old_bcy};
+        //   int botPos[2]= {ai->st.old_scx, ai->st.old_scy};
+        // int bot_to_ball_vector[2] = { ai->st.old_bcx - ai->st.old_scx, ai->st.old_bcy - ai->st.old_scy };
+        // // side=0 implies the robot's own side is the left side
+        // // side=1 implies the robot's own side is the right side
+        // bot_to_ball_vector[0] = (ai->side == 0) ? IM_SIZE_X : 0; //gets the enemy goal
+
+        // double theta = dottie_vector(bot_to_targetP_vector, botHeading) / sqtr(dottie_vector(bot_to_targetP_vector, bot_to_targetP_vector)* dottie_vector(botHeading, headingDir_vector));
+        int done_turning = turn_to_target(botHeading[0], botHeading[1], bot_to_targetP_vector[0], bot_to_targetP_vector[1]);
+        
+        return done_turning ? 4 : 3;
+        // // maninder's simple version for turning
+        // double theta = acos(dottie_vector(bot_to_targetP_vector, botHeading) / sqrt(dottie_vector(bot_to_targetP_vector, bot_to_targetP_vector)* dottie_vector(botHeading, botHeading)));
+        // printf("theta: %f\n", theta);
+        // // theta = acos(theta);
+        // // get_angle_ ( bot_to_targetP_vector, headingDir_vector  );
+
+
+        // BT_motor_port_start(LEFT_MOTOR, -10);
+        // BT_motor_port_start(RIGHT_MOTOR, 10);
+
+        // statements
+        break;
+    }
+    case 4: {
+     if (ai->st.self==NULL)                                         
+        { //NULL check
+            return STOP_BOT;
+        }
+        printf("bot_to_targetP_dist %f\n", bot_to_targetP_dist);
+        if (bot_to_targetP_dist < 100)
+        {
+            return 5;
+        }
+        BT_motor_port_start(LEFT_MOTOR | RIGHT_MOTOR, 25);
+        return 4; //stay in current state
+        break;
+    }
+    case 5: {
+     if (ai->st.self==NULL)                                         
+        { //NULL check
+            return STOP_BOT;
+        }
+        double theta = acos(dottie_vector(bot_to_ball_vector, botHeading) / sqrt(dottie_vector(bot_to_ball_vector, bot_to_ball_vector)* dottie_vector(botHeading, botHeading)));
+        // printf("bot_to_ball_vector %f botHeading %f",bot_to_ball_vector, botHeading);
+        // theta = acos(theta);
+        
+        // get_signed_angle_from_vectors(bot_to_ball[0], bot_to_ball[1], botHeading[0], botHeading[1]);
+        printf("5- theta: %f\n", theta);
+        if (fabs(theta) < 0.2)
+        {             //event = facing ball
+            return 6; // State turning = stop+move forward PID
+        }
+
+        BT_motor_port_start(LEFT_MOTOR, -10);
+        BT_motor_port_start(RIGHT_MOTOR, 10);
+
+        return 5;
+        break;
+    }
+    case 6: {
+        BT_motor_port_start(LEFT_MOTOR | RIGHT_MOTOR, 25);
+        BT_motor_port_start(MOTOR_C, -100);
+        if (bot_to_ball_dist > 300)
+        {
+            return 8;
+        }
+
+        return 6;
+        break;
+    }
+    case 7: {
+     if (ai->st.self==NULL)                                         
+        {             //NULL check
+            return 2; //reset penalty
+        }
+        BT_all_stop(0);
+        break;
+    }
+    case 8: {
+        BT_all_stop(0);
+        return 8;
+        break;
+    }
+     default: {
+         return 2;
+     }
+    }
+
+    return 2;
+}
+
 
 /**************************************************************************
  * AI state machine - this is where you will implement your soccer
@@ -956,23 +1137,22 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
    the bot is supposed to be doing.
   *****************************************************************************/
   int event = -1;
-  // if(ai->st.state == 101){ //  101 - if the bot is in PENALTY mode
-  //   ai->st.state = 2
-  // }else if(ai->st.state == 201){ //  201 - if the bot is in CHASE mode
-  //   ai->st.state = 3
-  // }
-  // //  1 - if the bot is in SOCCER mode
-  // //  2 - if the bot is in PENALTY mode
-  // //  3 - if the bot is in CHASE mode
-  // // THis is because we dont want our arrat
+  if(ai->st.state == 101){ //  101 - if the bot is in PENALTY mode
+    ai->st.state = 2;
+  }else if(ai->st.state == 201){ //  201 - if the bot is in CHASE mode
+    ai->st.state = 3;
+  }
+  //  1 - if the bot is in SOCCER mode
+  //  2 - if the bot is in PENALTY mode
+  //  3 - if the bot is in CHASE mode
+  // THis is because we dont want our arrat
 
 
   // Get current event
-  event = get_event(ai);
+  // event = get_event(ai);
   // Transition to next state
-  ai->st.state = get_new_state(ai->st.state, event);
   // Action to do at that state
-  do_action(ai->st.state);
+  // do_action(ai->st.state);
   //
 
   //get next state
@@ -990,25 +1170,27 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
       ai->st.self->dx *= -1;
       ai->st.self->dy *= -1;
     }
-     double ball_pos[2] = {IM_SIZE_X-1, IM_SIZE_Y/2}, 
-            bot_pos[2] = {ai->st.old_scx, ai->st.old_scy}, 
-            target_pos[2] = {goal_center_x, goal_center_y};
-    double distance_err, lateral_err;
-    finding_errors(ball_pos, bot_pos, target_pos, &distance_err, &lateral_err); // distance error is always positive
-    double drive_straight_output = drive_straight_to_target_PID(distance_err); 
+      printf("state: %d, headingDir_x %f headingDir_y %f\n ", ai->st.state, ai->st.sdx,ai->st.sdy);
+      ai->st.state = get_new_state_Penalty(ai, ai->st.state);
+    //  double ball_pos[2] = {IM_SIZE_X-1, IM_SIZE_Y/2}, 
+    //         bot_pos[2] = {ai->st.old_scx, ai->st.old_scy}, 
+    //         target_pos[2] = {goal_center_x, goal_center_y};
+    // double distance_err, lateral_err;
+    // finding_errors(ball_pos, bot_pos, target_pos, &distance_err, &lateral_err); // distance error is always positive
+    // double drive_straight_output = drive_straight_to_target_PID(distance_err); 
     
-    //calculate angle correction needed at current position
-    double relative_target_angle = get_target_angle_from_line(lateral_err, ball_pos, target_pos);
-    double relative_curr_angle = get_curr_angle_from_line(ball_pos, target_pos, ai->st.sdx, ai->st.sdy);
-    double angle_err = boundAngle180To180(relative_target_angle - relative_curr_angle);
+    // //calculate angle correction needed at current position
+    // double relative_target_angle = get_target_angle_from_line(lateral_err, ball_pos, target_pos);
+    // double relative_curr_angle = get_curr_angle_from_line(ball_pos, target_pos, ai->st.sdx, ai->st.sdy);
+    // double angle_err = boundAngle180To180(relative_target_angle - relative_curr_angle);
 
-    printf("distance_err: %f  lateral_err:%f : %f \n", distance_err, lateral_err); 
-    printf("target_angle: %f curr_angle: %f  angle_err:%f\n",relative_target_angle, relative_curr_angle, angle_err); 
-    fflush(stdout);
+    // printf("distance_err: %f  lateral_err:%f : %f \n", distance_err, lateral_err); 
+    // printf("target_angle: %f curr_angle: %f  angle_err:%f\n",relative_target_angle, relative_curr_angle, angle_err); 
+    // fflush(stdout);
 
 
-    double max_speed = 30, c1 = 1, c2 = 2;
-    double csum = c1+c2; c1 = c1/csum; c2 = c2/csum;
+    // double max_speed = 30, c1 = 1, c2 = 2;
+    // double csum = c1+c2; c1 = c1/csum; c2 = c2/csum;
     
     //BT_motor_port_start(RIGHT_MOTOR, c1*max_speed - c2*(angle_err / M_PI)*max_speed);
     //BT_motor_port_start(LEFT_MOTOR, c1*max_speed + c2*(angle_err / M_PI)*max_speed);
