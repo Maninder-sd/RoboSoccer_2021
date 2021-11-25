@@ -5,155 +5,322 @@
     3) Given (state) -> gets action function 
 ****/
 
-#define NUM_STATES 300
-#define NUM_EVENTS 100
+// #define NUM_STATES 300
+// #define NUM_EVENTS 100
 
-int FSM[NUM_STATES][NUM_EVENTS]; 
+// int FSM[NUM_STATES][NUM_EVENTS];
 
-double dottie_vector(double v[2], double u[2])
-{
- // Returns the dot product of the two vectors 
- return (v[0]*u[0])+(v[1]*u[1]);
-}
+// double dottie_vector(double v[2], double u[2])
+// {
+//     // Returns the dot product of the two vectors
+//     return (v[0] * u[0]) + (v[1] * u[1]);
+// }
 
 double magnitude_vector(double v[2])
 {
- // Returns the dot product of the two vectors 
- return sqrt(dottie_vector(v));
+    // Returns the dot product of the two vectors
+    return sqrt(dottie_vector(v, v));
 }
-
 
 #define STOP_BOT 7
+#define GOOD_BALL_DIST 100
 
 
-int get_new_state(struct RoboAI *ai, int old_state){
 
-}
-
-#define GOOD_BALL_DIST 10
-
-
-int get_new_state_Penalty(struct RoboAI *ai, int old_state){
+int get_new_state_Chase(struct RoboAI *ai, int old_state){
     // Find event based on the info in RoboAI ai struct (maybe also old_state)
     // call when in penalty mode
-    double ballPos[2]= {ai->st.old_bcx, ai->st.old_bcy};
+    double ballPos[2] = {ai->st.old_bcx, ai->st.old_bcy};
     double botHeading[2] = {ai->st.sdx, ai->st.sdy};
-    double botPos[2]= {ai->st.old_scx, ai->st.old_scy};
+    double botPos[2] = {ai->st.old_scx, ai->st.old_scy};
     double goalPos[2];
     // side=0 implies the robot's own side is the left side
     // side=1 implies the robot's own side is the right side
-    goalPos[0] = (ai->side == 0) ? IM_SIZE_X : 0; //gets the enemy goal
-    goalPos[1] = IM_SIZE_Y/2;
-    
-    double targetP[2] = {ballPos[0],ballPos[1] }
-    targetP[0] = (ai->side == 0) ? targetP[0] - GOOD_BALL_DIST : targetP[0] + GOOD_BALL_DIST; // add a bit to x distance
+    goalPos[0] = (ai->st.side == 0) ? IM_SIZE_X : 0; //gets the enemy goal
+    goalPos[1] = IM_SIZE_Y / 2;
 
+    static double targetP[2] = {-1, -1};
 
-    double bot_to_targetP_vector[2] = { targetP[0] - ai->st.old_scx, targetP[1] - ai->st.old_scy };
+    // targetP[0] = (ai->st.side == 0) ? targetP[0] - GOOD_BALL_DIST : targetP[0] + GOOD_BALL_DIST; // add a bit to x distance
+
+    double bot_to_targetP_vector[2] = {targetP[0] - ai->st.old_scx, targetP[1] - ai->st.old_scy};
     double bot_to_targetP_dist = magnitude_vector(bot_to_targetP_vector);
 
-    double bot_to_ball_vector[2] = { ballPos[0] - botPos[0], ballPos[1] - botPos[0] };
+    double bot_to_ball_vector[2] = {ballPos[0] - botPos[0], ballPos[1] - botPos[1]};
     double bot_to_ball_dist = magnitude_vector(bot_to_ball_vector);
 
+    if (targetP[0] == -1 && targetP[1] == -1 ) {      
+      double goal_to_ball[2] = {ballPos[0]- goalPos[0], ballPos[1] - goalPos[1] };
+      double magnitude = magnitude_vector(goal_to_ball);
+      // make it vector of magnitude GOOD_BALL_DIST in the balls direction
+      goal_to_ball[0] = GOOD_BALL_DIST * goal_to_ball[0] / magnitude;
+      goal_to_ball[1] = GOOD_BALL_DIST * goal_to_ball[1] / magnitude;
+      
+      // target = ball + offset in ball's direction
+      targetP[0] = ballPos[0] + goal_to_ball[0];
+      targetP[1] = ballPos[1] + goal_to_ball[1];
+
+
+        // targetP[0] = (ai->st.side == 0) ? ballPos[0] - GOOD_BALL_DIST : ballPos[0] + GOOD_BALL_DIST;
+        // targetP[1] = ballPos[1];
+    }
 
     switch (old_state)
-    ​{
-        case 2: // Penalty
-            //
-            return 3;
+    {
+    case 101: { // Penalty
+        return 102;
 
-            if( !(ai->st.old_bcx && ai->st.old_bcy && ai->st.old_scx && ai->st.old_scy) ){
-                return STOP_BOT;
-            }
+     if (ai->st.self==NULL)                                         
+        {
+            return STOP_BOT;
+        }
 
-            // double bot_to_ball_dist ;
-            double bot_to_line_dist ;
+        // double bot_to_ball_dist ;
+        double bot_to_line_dist;
 
-            finding_errors( ballPos, bot_pos, goalPos , &bot_to_ball_dist, &bot_to_line_dist);
-            
-            break;
+        // finding_errors(ballPos, bot_pos, goalPos, &bot_to_ball_dist, &bot_to_line_dist);
 
-        case 3: // is it facing the target_p?
-            if( !(ai->st.old_bcx && ai->st.old_bcy && ai->st.old_scx && ai->st.old_scy) ){ //NULL check
-                return STOP_BOT;
-            }
+        break;
+    }
+    case 102: {// is it facing the target_p?
+     if (ai->st.self==NULL)                                         
+        { //NULL check
+            return STOP_BOT;
+        }
 
-            //   int ballPos[2]= {ai->st.old_bcx, ai->st.old_bcy};
-            //   int botPos[2]= {ai->st.old_scx, ai->st.old_scy}; 
-            // int bot_to_ball_vector[2] = { ai->st.old_bcx - ai->st.old_scx, ai->st.old_bcy - ai->st.old_scy };
-            // // side=0 implies the robot's own side is the left side
-            // // side=1 implies the robot's own side is the right side
-            // bot_to_ball_vector[0] = (ai->side == 0) ? IM_SIZE_X : 0; //gets the enemy goal
+        //   int ballPos[2]= {ai->st.old_bcx, ai->st.old_bcy};
+        //   int botPos[2]= {ai->st.old_scx, ai->st.old_scy};
+        // int bot_to_ball_vector[2] = { ai->st.old_bcx - ai->st.old_scx, ai->st.old_bcy - ai->st.old_scy };
+        // // side=0 implies the robot's own side is the left side
+        // // side=1 implies the robot's own side is the right side
+        // bot_to_ball_vector[0] = (ai->side == 0) ? IM_SIZE_X : 0; //gets the enemy goal
 
-            int headingDir_vector[2] = {ai->st.sdx, ai->st.sdy};
-            
-            double theta = get_angle_ ( bot_to_targetP_vector, headingDir_vector  );
-            = dottie_vector(bot_to_targetP_vector, headingDir_vector) / sqtr(dottie_vector(bot_to_targetP_vector,bot_to_targetP_vector) ,dottie_vector(headingDir_vector, headingDir_vector)  );
-            theta = acos(theta);
+        // double theta = dottie_vector(bot_to_targetP_vector, botHeading) / sqtr(dottie_vector(bot_to_targetP_vector, bot_to_targetP_vector)* dottie_vector(botHeading, headingDir_vector));
+        int done_turning = turn_to_target(botHeading[0], botHeading[1], bot_to_targetP_vector[0], bot_to_targetP_vector[1]);
+        
+        return done_turning ? 103 : 102;
+        // // maninder's simple version for turning
+        // double theta = acos(dottie_vector(bot_to_targetP_vector, botHeading) / sqrt(dottie_vector(bot_to_targetP_vector, bot_to_targetP_vector)* dottie_vector(botHeading, botHeading)));
+        // printf("theta: %f\n", theta);
+        // // theta = acos(theta);
+        // // get_angle_ ( bot_to_targetP_vector, headingDir_vector  );
 
-            if( fabs(theta) < 0.1 ){ //event = facing ball
-                return 4; // State turning = stop+move forward PID 
-            }
 
-            // statements
-            return 3; //stay in current state
-            break;
+        // BT_motor_port_start(LEFT_MOTOR, -10);
+        // BT_motor_port_start(RIGHT_MOTOR, 10);
 
-        case 4:
-            if( !(ai->st.old_bcx && ai->st.old_bcy && ai->st.old_scx && ai->st.old_scy) ){ //NULL check
-                return STOP_BOT;
-            }
-            if (bot_to_targetP_dist < 100){
-                return 5;
-            }
-            return 4;  //stay in current state
-            break;
+        // statements
+        break;
+    }
+    case 103: {
+     if (ai->st.self==NULL)                                         
+        { //NULL check
+            return STOP_BOT;
+        }
+        printf("bot_to_targetP_dist %f\n", bot_to_targetP_dist);
+        if (bot_to_targetP_dist < 100)
+        {
+            return 104;
+        }
+        BT_motor_port_start(LEFT_MOTOR | RIGHT_MOTOR, 25);
+        return 103; //stay in current state
+        break;
+    }
+    case 104: {
+     if (ai->st.self==NULL)                                         
+        { //NULL check
+            return STOP_BOT;
+        }
+        double theta = acos(dottie_vector(bot_to_ball_vector, botHeading) / sqrt(dottie_vector(bot_to_ball_vector, bot_to_ball_vector)* dottie_vector(botHeading, botHeading)));
+        // printf("bot_to_ball_vector %f botHeading %f",bot_to_ball_vector, botHeading);
+        // theta = acos(theta);
+        
+        // get_signed_angle_from_vectors(bot_to_ball[0], bot_to_ball[1], botHeading[0], botHeading[1]);
+        printf("5- theta: %f\n", theta);
+        if (fabs(theta) < 0.2)
+        {             //event = facing ball
+            return 105; // State turning = stop+move forward PID
+        }
 
-        case 5:
-            if( !(ai->st.old_bcx && ai->st.old_bcy && ai->st.old_scx && ai->st.old_scy) ){ //NULL check
-                return STOP_BOT;
-            }
-            double theta = get_angle (bot_to_ball, botHeading);
+        BT_motor_port_start(LEFT_MOTOR, -10);
+        BT_motor_port_start(RIGHT_MOTOR, 10);
 
-            if( fabs(theta) < 0.1 ){ //event = facing ball
-                return 6; // State turning = stop+move forward PID 
-            }
+        return 104;
+        break;
+    }
+    case 105: {
+        BT_motor_port_start(LEFT_MOTOR | RIGHT_MOTOR, 25);
+        BT_motor_port_start(MOTOR_C, -100);
+        if (bot_to_ball_dist > 300)
+        {
+            return 107;
+        }
 
+        return 105;
+        break;
+    }
+    case 106: {
+     if (ai->st.self==NULL)                                         
+        {             //NULL check
+            return 101; //reset penalty
+        }
+        BT_all_stop(0);
+        break;
+    }
+    case 107: {
+        BT_all_stop(0);
+        return 107; //stay in 107
+        break;
+    }
+     default: {
+         return 101;
+     }
+    }
+
+    return 101;
+}
+
+
+
+/*
+int get_new_state_Penalty(struct RoboAI *ai, int old_state){
+    // Find event based on the info in RoboAI ai struct (maybe also old_state)
+    // call when in penalty mode
+    double ballPos[2] = {ai->st.old_bcx, ai->st.old_bcy};
+    double botHeading[2] = {ai->st.sdx, ai->st.sdy};
+    double botPos[2] = {ai->st.old_scx, ai->st.old_scy};
+    double goalPos[2];
+    // side=0 implies the robot's own side is the left side
+    // side=1 implies the robot's own side is the right side
+    goalPos[0] = (ai->st.side == 0) ? IM_SIZE_X : 0; //gets the enemy goal
+    goalPos[1] = IM_SIZE_Y / 2;
+
+    static double targetP[2] = {-1, -1};
+    if (targetP[0] == -1 && targetP[1] == -1 ) {
+        targetP[0] = (ai->st.side == 0) ? ballPos[0] - GOOD_BALL_DIST : ballPos[0] + GOOD_BALL_DIST;
+        targetP[1] = ballPos[1];
+    }
+    // targetP[0] = (ai->st.side == 0) ? targetP[0] - GOOD_BALL_DIST : targetP[0] + GOOD_BALL_DIST; // add a bit to x distance
+
+    double bot_to_targetP_vector[2] = {targetP[0] - ai->st.old_scx, targetP[1] - ai->st.old_scy};
+    double bot_to_targetP_dist = magnitude_vector(bot_to_targetP_vector);
+
+    double bot_to_ball_vector[2] = {ballPos[0] - botPos[0], ballPos[1] - botPos[0]};
+    double bot_to_ball_dist = magnitude_vector(bot_to_ball_vector);
+
+    switch (old_state)
+    {
+    case 2: { // Penalty
+        return 3;
+
+        if (!(ai->st.old_bcx && ai->st.old_bcy && ai->st.old_scx && ai->st.old_scy))
+        {
+            return STOP_BOT;
+        }
+
+        // double bot_to_ball_dist ;
+        double bot_to_line_dist;
+
+        // finding_errors(ballPos, bot_pos, goalPos, &bot_to_ball_dist, &bot_to_line_dist);
+
+        break;
+    }
+    case 3: {// is it facing the target_p?
+        if (!(ai->st.old_bcx && ai->st.old_bcy && ai->st.old_scx && ai->st.old_scy))
+        { //NULL check
+            return STOP_BOT;
+        }
+
+        //   int ballPos[2]= {ai->st.old_bcx, ai->st.old_bcy};
+        //   int botPos[2]= {ai->st.old_scx, ai->st.old_scy};
+        // int bot_to_ball_vector[2] = { ai->st.old_bcx - ai->st.old_scx, ai->st.old_bcy - ai->st.old_scy };
+        // // side=0 implies the robot's own side is the left side
+        // // side=1 implies the robot's own side is the right side
+        // bot_to_ball_vector[0] = (ai->side == 0) ? IM_SIZE_X : 0; //gets the enemy goal
+
+        // double theta = dottie_vector(bot_to_targetP_vector, botHeading) / sqtr(dottie_vector(bot_to_targetP_vector, bot_to_targetP_vector)* dottie_vector(botHeading, headingDir_vector));
+        double theta = acos(dottie_vector(bot_to_targetP_vector, botHeading) / sqrt(dottie_vector(bot_to_targetP_vector, bot_to_targetP_vector)* dottie_vector(botHeading, botHeading)));
+        printf("theta: %f\n", theta);
+        // theta = acos(theta);
+        // get_angle_ ( bot_to_targetP_vector, headingDir_vector  );
+
+        if (fabs(theta) < 0.2)
+        {             //event = facing ball
+            return 4; // State turning = stop+move forward PID
+        }
+        BT_motor_port_start(LEFT_MOTOR, -10);
+        BT_motor_port_start(RIGHT_MOTOR, 10);
+
+        // statements
+        return 3; //stay in current state
+        break;
+    }
+    case 4: {
+        if (!(ai->st.old_bcx && ai->st.old_bcy && ai->st.old_scx && ai->st.old_scy))
+        { //NULL check
+            return STOP_BOT;
+        }
+        printf("bot_to_targetP_dist %f\n", bot_to_targetP_dist);
+        if (bot_to_targetP_dist < 100)
+        {
             return 5;
-            break;
+        }
+        BT_motor_port_start(LEFT_MOTOR | RIGHT_MOTOR, 25);
+        return 4; //stay in current state
+        break;
+    }
+    case 5: {
+        if (!(ai->st.old_bcx && ai->st.old_bcy && ai->st.old_scx && ai->st.old_scy))
+        { //NULL check
+            return STOP_BOT;
+        }
+        double theta = acos(dottie_vector(bot_to_ball_vector, botHeading) / sqrt(dottie_vector(bot_to_ball_vector, bot_to_ball_vector)* dottie_vector(botHeading, botHeading)));
+        // printf("bot_to_ball_vector %f botHeading %f",bot_to_ball_vector, botHeading);
+        // theta = acos(theta);
+        
+        // get_signed_angle_from_vectors(bot_to_ball[0], bot_to_ball[1], botHeading[0], botHeading[1]);
 
-        case 6:
-            
-            if(bot_to_ball_dist > 300){
-                return 8;
-            }
+        if (fabs(theta) < 0.2)
+        {             //event = facing ball
+            return 6; // State turning = stop+move forward PID
+        }
 
+        BT_motor_port_start(LEFT_MOTOR, -10);
+        BT_motor_port_start(RIGHT_MOTOR, 10);
 
-            return 6;
-            break;
-        case 7:
-            if( ai->st.old_bcx && ai->st.old_bcy && ai->st.old_scx && ai->st.old_scy ){ //NULL check
-                return 2; //reset penalty
-            }
-            break;
-        case 8:
+        return 5;
+        break;
+    }
+    case 6: {
+        BT_motor_port_start(LEFT_MOTOR | RIGHT_MOTOR, 25);
+        BT_motor_port_start(MOTOR_C, -100);
+        if (bot_to_ball_dist > 800)
+        {
             return 8;
-            break;
-}
+        }
 
+        return 6;
+        break;
+    }
+    case 7: {
+        if (ai->st.old_bcx && ai->st.old_bcy && ai->st.old_scx && ai->st.old_scy)
+        {             //NULL check
+            return 2; //reset penalty
+        }
+        BT_all_stop(0);
+        break;
+    }
+    case 8: {
+        BT_all_stop(0);
+        return 8;
+        break;
+    }
+     default: {
+         return 2;
+     }
+    }
 
-int get_new_state(int old_state, int event){
-    // Given (old_state, event) -> gets next state
-    return -1;
-}
-
-void do_action(int state){
-    // Given (state) -> gets action function
-    return;
-}
-
-
-inline void state3(){
-    // turn to face 
     return 2;
 }
+
+*/

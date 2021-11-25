@@ -36,7 +36,7 @@
 
 
 // TODO: move to header
-#define STOP_BOT 7
+#define STOP_BOT 106
 #define GOOD_BALL_DIST 100
 
 // TODO: move to math helper
@@ -829,8 +829,8 @@ int get_new_state_Penalty(struct RoboAI *ai, int old_state){
 
     switch (old_state)
     {
-    case 2: { // Penalty
-        return 3;
+    case 101: { // Penalty
+        return 102;
 
      if (ai->st.self==NULL)                                         
         {
@@ -844,7 +844,7 @@ int get_new_state_Penalty(struct RoboAI *ai, int old_state){
 
         break;
     }
-    case 3: {// is it facing the target_p?
+    case 102: {// is it facing the target_p?
      if (ai->st.self==NULL)                                         
         { //NULL check
             return STOP_BOT;
@@ -860,7 +860,7 @@ int get_new_state_Penalty(struct RoboAI *ai, int old_state){
         // double theta = dottie_vector(bot_to_targetP_vector, botHeading) / sqtr(dottie_vector(bot_to_targetP_vector, bot_to_targetP_vector)* dottie_vector(botHeading, headingDir_vector));
         int done_turning = turn_to_target(botHeading[0], botHeading[1], bot_to_targetP_vector[0], bot_to_targetP_vector[1]);
         
-        return done_turning ? 4 : 3;
+        return done_turning ? 103 : 102;
         // // maninder's simple version for turning
         // double theta = acos(dottie_vector(bot_to_targetP_vector, botHeading) / sqrt(dottie_vector(bot_to_targetP_vector, bot_to_targetP_vector)* dottie_vector(botHeading, botHeading)));
         // printf("theta: %f\n", theta);
@@ -874,7 +874,7 @@ int get_new_state_Penalty(struct RoboAI *ai, int old_state){
         // statements
         break;
     }
-    case 4: {
+    case 103: {
      if (ai->st.self==NULL)                                         
         { //NULL check
             return STOP_BOT;
@@ -882,13 +882,13 @@ int get_new_state_Penalty(struct RoboAI *ai, int old_state){
         printf("bot_to_targetP_dist %f\n", bot_to_targetP_dist);
         if (bot_to_targetP_dist < 100)
         {
-            return 5;
+            return 104;
         }
         BT_motor_port_start(LEFT_MOTOR | RIGHT_MOTOR, 25);
-        return 4; //stay in current state
+        return 103; //stay in current state
         break;
     }
-    case 5: {
+    case 104: {
      if (ai->st.self==NULL)                                         
         { //NULL check
             return STOP_BOT;
@@ -901,45 +901,45 @@ int get_new_state_Penalty(struct RoboAI *ai, int old_state){
         printf("5- theta: %f\n", theta);
         if (fabs(theta) < 0.2)
         {             //event = facing ball
-            return 6; // State turning = stop+move forward PID
+            return 105; // State turning = stop+move forward PID
         }
 
         BT_motor_port_start(LEFT_MOTOR, -10);
         BT_motor_port_start(RIGHT_MOTOR, 10);
 
-        return 5;
+        return 104;
         break;
     }
-    case 6: {
+    case 105: {
         BT_motor_port_start(LEFT_MOTOR | RIGHT_MOTOR, 25);
         BT_motor_port_start(MOTOR_C, -100);
         if (bot_to_ball_dist > 300)
         {
-            return 8;
+            return 107;
         }
 
-        return 6;
+        return 105;
         break;
     }
-    case 7: {
+    case 106: {
      if (ai->st.self==NULL)                                         
         {             //NULL check
-            return 2; //reset penalty
+            return 101; //reset penalty
         }
         BT_all_stop(0);
         break;
     }
-    case 8: {
+    case 107: {
         BT_all_stop(0);
-        return 8;
+        return 107; //stay in 107
         break;
     }
      default: {
-         return 2;
+         return 101;
      }
     }
 
-    return 2;
+    return 101;
 }
 
 
@@ -1136,26 +1136,6 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
    state transitions and with calling the appropriate function based on what
    the bot is supposed to be doing.
   *****************************************************************************/
-  int event = -1;
-  if(ai->st.state == 101){ //  101 - if the bot is in PENALTY mode
-    ai->st.state = 2;
-  }else if(ai->st.state == 201){ //  201 - if the bot is in CHASE mode
-    ai->st.state = 3;
-  }
-  //  1 - if the bot is in SOCCER mode
-  //  2 - if the bot is in PENALTY mode
-  //  3 - if the bot is in CHASE mode
-  // THis is because we dont want our arrat
-
-
-  // Get current event
-  // event = get_event(ai);
-  // Transition to next state
-  // Action to do at that state
-  // do_action(ai->st.state);
-  //
-
-  //get next state
   
   
   
@@ -1171,7 +1151,12 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
       ai->st.self->dy *= -1;
     }
       printf("state: %d, headingDir_x %f headingDir_y %f\n ", ai->st.state, ai->st.sdx,ai->st.sdy);
+    if ( 100< ai->st.state  && ai->st.state < 200){
       ai->st.state = get_new_state_Penalty(ai, ai->st.state);
+    }else if ( 200< ai->st.state  ){
+      // ai->st.state = get_new_state_Chase(ai, ai->st.state);
+    }
+    
     //  double ball_pos[2] = {IM_SIZE_X-1, IM_SIZE_Y/2}, 
     //         bot_pos[2] = {ai->st.old_scx, ai->st.old_scy}, 
     //         target_pos[2] = {goal_center_x, goal_center_y};

@@ -66,7 +66,7 @@ static double get_target_angle_from_line(double lateral_err, double ball_pos[2],
   if (lateral_err == 0) {
 
   }
-  //double relative_target_x_heading = (1 / (fabs(lateral_err) + (lateral_err == 0))) + (lateral_err == 0);
+  double relative_target_x_heading = (1 / (fabs(lateral_err) + (lateral_err == 0))) + (lateral_err == 0);
   // ouble relative_target_x_heading = (1 / (fabs(lateral_err) + (lateral_err == 0))) + (lateral_err == 0);
   double relative_target_y_heading = (fabs(lateral_err)/lateral_err)*k1;
 
