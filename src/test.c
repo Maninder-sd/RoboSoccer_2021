@@ -49,25 +49,26 @@ static double get_signed_angle_from_vectors(double ux, double uy, double vx, dou
          get_magnitude(vx, vy)));
 }
 
-static double get_curr_angle_from_line(double ball_pos[2], double target_pos[2], double bot_pos[2]) {
+static double get_curr_angle_from_line(double ball_pos[2], double target_pos[2], double dx, double dy) {
   double ball_to_goal[2];
     ball_to_goal[0] =  target_pos[0] -ball_pos[0];
     ball_to_goal[1] =  target_pos[1] -ball_pos[1];
-    
-    double bot_to_ball[2];
-    bot_to_ball[0] =  ball_pos[0] -bot_pos[0];
-    bot_to_ball[1] =  ball_pos[1] -bot_pos[1];
 
-    double curr_angle_signed = get_signed_angle_from_vectors(bot_to_ball[0], bot_to_ball[1], ball_to_goal[0], ball_to_goal[1]);
+    double curr_angle_signed = get_signed_angle_from_vectors(dx, dy, ball_to_goal[0], ball_to_goal[1]);
     return boundAngle0To360_2(curr_angle_signed);
 
 }
 
 static double get_target_angle_from_line(double lateral_err, double ball_pos[2], double target_pos[2]) {
 
-  double k1 = 100;
-  double relative_target_x_heading = (1 / (lateral_err + (lateral_err == 0))) - (lateral_err == 0);
-  double relative_target_y_heading = k1;
+  double k1 = .2;
+
+  if (lateral_err == 0) {
+
+  }
+  //double relative_target_x_heading = (1 / (fabs(lateral_err) + (lateral_err == 0))) + (lateral_err == 0);
+  // ouble relative_target_x_heading = (1 / (fabs(lateral_err) + (lateral_err == 0))) + (lateral_err == 0);
+  double relative_target_y_heading = (fabs(lateral_err)/lateral_err)*k1;
 
   double ball_to_goal[2];
   ball_to_goal[0] =  target_pos[0] -ball_pos[0];
@@ -76,7 +77,7 @@ static double get_target_angle_from_line(double lateral_err, double ball_pos[2],
   double target_angle_signed = get_signed_angle_from_vectors(relative_target_x_heading, relative_target_y_heading,
       ball_to_goal[0], ball_to_goal[1]);
 
-  return boundAngle0To360_2(target_angle_signed);
+  return  boundAngle0To360_2(target_angle_signed);
 
 
 }

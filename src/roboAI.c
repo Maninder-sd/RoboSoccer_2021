@@ -966,7 +966,7 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
       ai->st.self->dx *= -1;
       ai->st.self->dy *= -1;
     }
-     double ball_pos[2] = {IM_SIZE_X/2, IM_SIZE_Y/2}, 
+     double ball_pos[2] = {IM_SIZE_X-1, IM_SIZE_Y/2}, 
             bot_pos[2] = {ai->st.old_scx, ai->st.old_scy}, 
             target_pos[2] = {goal_center_x, goal_center_y};
     double distance_err, lateral_err;
@@ -975,16 +975,19 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
     
     //calculate angle correction needed at current position
     double relative_target_angle = get_target_angle_from_line(lateral_err, ball_pos, target_pos);
-    double relative_curr_angle = get_curr_angle_from_line(ball_pos, target_pos, bot_pos);
+    double relative_curr_angle = get_curr_angle_from_line(ball_pos, target_pos, ai->st.sdx, ai->st.sdy);
     double angle_err = boundAngle180To180(relative_target_angle - relative_curr_angle);
 
-    printf("distance_err: %f  lateral_err:%f drive_straight_output: %f \n", distance_err, lateral_err, drive_straight_output); 
+    printf("distance_err: %f  lateral_err:%f : %f \n", distance_err, lateral_err); 
+    printf("target_angle: %f curr_angle: %f  angle_err:%f\n",relative_target_angle, relative_curr_angle, angle_err); 
     fflush(stdout);
 
-    double max_speed = 50;
+
+    double max_speed = 30, c1 = 1, c2 = 2;
+    double csum = c1+c2; c1 = c1/csum; c2 = c2/csum;
     
-    BT_motor_port_start(RIGHT_MOTOR, max_speed - (angle_err / M_PI)*max_speed);
-    BT_motor_port_start(LEFT_MOTOR, max_speed + (angle_err / M_PI)*max_speed);
+    //BT_motor_port_start(RIGHT_MOTOR, c1*max_speed - c2*(angle_err / M_PI)*max_speed);
+    //BT_motor_port_start(LEFT_MOTOR, c1*max_speed + c2*(angle_err / M_PI)*max_speed);
 
     //double right_bias = -5 * turn_align_output, left_bais = 5 * turn_align_output;
 
