@@ -1115,7 +1115,7 @@ int BT_clear_gyro_sensor(char sensor_port){
  return (0);
 }
 
-int BT_read_gyro_sensor(char sensor_port, int angle_speed[2]){
+int BT_read_gyro_sensor_not_working(char sensor_port, int angle_speed[2]){
  ////////////////////////////////////////////////////////////////////////////////////////////////
  //
  // Clears the sensor data of the gyro sensor and then reads the values for angle and speed of angle
@@ -1194,3 +1194,89 @@ int BT_read_gyro_sensor(char sensor_port, int angle_speed[2]){
  return (0);
 }
 
+int BT_read_gyro_sensor(char sensor_port) {
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  //
+  // Returns the relative angle. Note that the sensor is initialized when you
+  // first power up the kit, so whatever orientation the bot has at that point,
+  // becomes 0 degrees. Sensor accuracy is +/- 3 degrees within 90 degrees. If
+  // the gyro is undergoing changes over 440 degrees/sec, the readings are known
+  // to be inaccurate.
+  //
+  // Ports are identified as PORT_1, PORT_2, etc
+  //
+  // Inputs: port identifier of gyro sensor port
+  //
+  // Returns: angle on success
+  //          -1 if EV3 returned an error response
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+  void *p;
+  unsigned char reply[1024];
+  memset(&reply[0], 0, 1024);
+  unsigned char *cp;
+  int angle = 0;
+
+  unsigned char cmd_string[15] = {0x00, 0x00, 0x00, 0x00, 0x00,
+                                  0x04, 0x00, 0x00, 0x00, 0x00,
+                                  0x00, 0x00, 0x00, 0x00, 0x00};
+  //                          |length-2| | cnt_id | |type| | header |   |cmd|
+  //                          |layer|  |port| |type| |mode| |format| |# vals|
+  //                          |global var addr|
+
+  if (sensor_port > 8) {
+    fprintf(stderr, "BT_read_gyro_sensor: Invalid port id value\n");
+    return (-1);
+  }
+
+  cmd_string[0] = LC0(13);
+  // Set message count id
+  p = (void *)&message_id_counter;
+  cp = (unsigned char *)p;
+  cmd_string[2] = *cp;
+  cmd_string[3] = *(cp + 1);
+
+  cmd_string[7] = opINPUT_READEXT;
+  cmd_string[9] = sensor_port;
+  cmd_string[10] = LC0(0);         // don't change type
+  cmd_string[11] = LC0(-1);        // don't change mode
+  cmd_string[12] = LC0(DATA_RAW);  // format
+  cmd_string[13] = LC0(0x01);      // data set
+  cmd_string[14] = GV0(0x00);      // global var
+
+#ifdef __BT_debug
+  fprintf(stderr, "BT_read_gyro_sensor command string\n");
+  for (int i = 0; i < 15; i++) {
+    fprintf(stderr, "%X, ", cmd_string[i] & 0xff);
+  }
+  fprintf(stderr, "\n");
+#endif
+
+  write(*socket_id, &cmd_string[0], 15);
+  read(*socket_id, &reply[0], 1023);
+
+  message_id_counter++;
+
+  if (reply[4] == 0x02) {
+#ifdef __BT_debug
+    fprintf(stderr, "BT_read_gyro_sensor(): Command successful\n");
+    fprintf(stderr, "BT_read_gyro_sensor response string:\n");
+    for (int i = 0; i < 9; i++) {
+      fprintf(stderr, "%X, ", reply[i] & 0xff);
+    }
+    fprintf(stderr, "\n");
+    angle |= reply[8];
+    angle <<= 8;
+    angle |= reply[7];
+    angle <<= 8;
+    angle |= reply[6];
+    angle <<= 8;
+    angle |= reply[5];
+    fprintf(stderr, "angle: %d\n", angle);
+#endif
+  } else {
+    fprintf(stderr, "BT_read_gyro_sensor: Command failed\n");
+    return (-1);
+  }
+
+  return (angle);
+}
