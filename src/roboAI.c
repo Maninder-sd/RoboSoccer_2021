@@ -891,6 +891,7 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
       ai->st.self->dx *= -1;
       ai->st.self->dy *= -1;
     }
+    // printf("scx: %f scy: %f", ai->st.old_scx, ai->st.old_scy);
       printf("state: %d, headingDir_x %f headingDir_y %f\n ", ai->st.state, ai->st.sdx,ai->st.sdy);
     if ( 100< ai->st.state  && ai->st.state < 200){
       ai->st.state = get_new_state_Penalty(ai, ai->st.state);
