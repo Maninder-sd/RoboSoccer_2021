@@ -61,14 +61,17 @@ static double get_curr_angle_from_line(double ball_pos[2], double target_pos[2],
 
 static double get_target_angle_from_line(double lateral_err, double ball_pos[2], double target_pos[2]) {
 
-  double k1 = .2;
+  double k1 = .01;
 
-  if (lateral_err == 0) {
-
+  double relative_target_y_heading, relative_target_x_heading;
+  if (fabs(lateral_err) < 0.1) {
+    relative_target_y_heading = 0;
+    relative_target_x_heading = -1;
+  } else {
+    relative_target_y_heading = -(fabs(lateral_err)/lateral_err)*k1;
+    relative_target_x_heading = -1 / fabs(.5*lateral_err);
   }
-  double relative_target_x_heading = (1 / (fabs(lateral_err) + (lateral_err == 0))) + (lateral_err == 0);
-  // ouble relative_target_x_heading = (1 / (fabs(lateral_err) + (lateral_err == 0))) + (lateral_err == 0);
-  double relative_target_y_heading = (fabs(lateral_err)/lateral_err)*k1;
+  //double relative_target_x_heading = (1 / (fabs(lateral_err) + (lateral_err == 0))) - (lateral_err == 0);
 
   double ball_to_goal[2];
   ball_to_goal[0] =  target_pos[0] -ball_pos[0];
