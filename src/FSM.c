@@ -33,6 +33,199 @@ double getAngle_vector(double u[2] , double v[2])
 #define GOOD_BALL_DIST 100
 
 
+int get_new_state_soccer(struct RoboAI *ai, int old_state) {
+
+    static double target_pos[2];
+
+    double ballPos[2] = {ai->st.old_bcx, ai->st.old_bcy};
+    double botHeading[2] = {ai->st.sdx, ai->st.sdy};
+    double botPos[2] = {ai->st.old_scx, ai->st.old_scy};
+    double goalPos[2];
+    // side=0 implies the robot's own side is the left side
+    // side=1 implies the robot's own side is the right side
+    goalPos[0] = (ai->st.side == 0) ? IM_SIZE_X : 0; //gets the enemy goal
+    goalPos[1] = IM_SIZE_Y / 2;
+
+    static double targetP[2] = {-1, -1};
+    
+    double goal_to_ball[2] = {ballPos[0]- goalPos[0], ballPos[1] - goalPos[1] };
+    int is_bot_off_side = (ballPos[0] - botPos[0] <= 0);
+
+    if (!ai->st.side) {
+        
+    }
+
+    double bot_to_ball[2]
+
+    double magnitude = magnitude_vector(goal_to_ball);
+    // make it vector of magnitude GOOD_BALL_DIST in the balls direction
+    goal_to_ball[0] = GOOD_BALL_DIST * goal_to_ball[0] / magnitude;
+    goal_to_ball[1] = GOOD_BALL_DIST * goal_to_ball[1] / magnitude;
+    
+    // target = ball + offset in ball's direction
+    targetP[0] = ballPos[0] + goal_to_ball[0];
+    targetP[1] = ballPos[1] + goal_to_ball[1];
+
+    double opponent[2] = {ai->st.opp->cx, ai->st.opp->cy};
+    int is_opponent_offside = (ballPos[0] - opponent[0] > 0);
+    if (ai->st.side) {
+        is_bot_off_side = !is_bot_off_side;
+        is_opponent_offside = !is_opponent_offside;
+    }
+
+    double opponent_to_ball[2] = {ballPos[0] - opponent[0], ballPos[1] - opponent[1]};
+
+    double bot_to_ball_vector[2] = {ballPos[0] - botPos[0], ballPos[1] - botPos[1]};
+    double bot_to_ball_dist = magnitude_vector(bot_to_ball_vector);
+    
+    // acos(dottie_vector(bot_to_targetP_vector, botHeading) / sqrt(dottie_vector(bot_to_targetP_vector, bot_to_targetP_vector)* dottie_vector(botHeading, botHeading)));
+
+    double bot_to_ball_angle = getAngle_vector(bot_to_ball_vector, botHeading); 
+
+    int is_opponent_closer = (magnitude_vector(opponent_to_ball) <= magnitude_vector(bot_to_targetP_vector));
+    int ball_in_middle = (ballPos[1] > IM_SIZE_Y * 0.25 && ballPos[1] < IM_SIZE_Y * 0.75);
+
+    double angle_thresh = 0.1;
+    double own_goal_x = fabs(IM_SIZE_X - goalPos[0]);
+    int bot_above_ball = botPos[1] - ballPos[1] > 0;
+
+    //attack mode
+    if (!is_bot_off_side && (!is_opponent_closer || is_opponent_offside)) {
+        target_pos[0] = targetP[0]; target_pos[1] = targetP[1];
+    } 
+
+    //defense mode
+    else if (!is_bot_off_side && is_opponent_closer) {
+        target_pos[0] = ballPos[0] - own_goal_x; target_pos[1] = ballPos[1] - goalPos[1];
+
+        double mg = magnitude_vector(target_pos);
+        target_pos[0] = ballPos[0] + GOOD_BALL_DIST*target_pos[0] / mg;
+        target_pos[1] = ballPos[1] + GOOD_BALL_DIST*target_pos[1] / mg;
+        
+    }
+
+    //offside deflect down
+    else if (is_bot_off_side && ball_in_middle && bot_above_ball) {
+        double corner_target[2] = {own_goal_x, 10};
+        target_pos[0] = corner_target[0] - ballPos[0]; target_pos[1] = corner_target[1] - ballPos[1];
+
+        double mg = magnitude_vector(target_pos);
+        target_pos[0] = ballPos[0] + GOOD_BALL_DIST*target_pos[0] / mg;
+        target_pos[1] = ballPos[1] + GOOD_BALL_DIST*target_pos[1] / mg;
+
+    }
+
+    //offside deflect up
+    else if (is_bot_off_side && ball_in_middle && !bot_above_ball) {
+        double corner_target[2] = {own_goal_x, 10};
+        target_pos[0] = corner_target[0] - ballPos[0]; target_pos[1] = corner_target[1] - ballPos[1];
+
+        double mg = magnitude_vector(target_pos);
+        target_pos[0] = ballPos[0] + GOOD_BALL_DIST*target_pos[0] / mg;
+        target_pos[1] = ballPos[1] + GOOD_BALL_DIST*target_pos[1] / mg;
+
+    }
+
+    //offside flee
+    else {
+        target_pos[0] = own_goal_x - 20; target_pos[1] = goalPos[1];
+    };
+
+    double bot_to_targetP_vector[2] = {target_pos[0] - ai->st.old_scx, target_pos[1] - ai->st.old_scy};
+    double bot_to_targetP_dist = magnitude_vector(bot_to_targetP_vector);
+
+
+    double bot_to_targetP_angle = getAngle_vector(bot_to_targetP_vector, botHeading);
+
+    switch (old_state) {
+              case 1: {
+            
+            //action
+
+            if( fabs(bot_to_targetP_angle) > 1){ //more than 60 deg
+                return 2;
+            }else{
+                return 3;
+            }
+        }
+        case 2: {
+
+            //rotation PID
+            int done_turning = turn_to_target(botHeading[0], botHeading[1], bot_to_targetP_vector[0], bot_to_targetP_vector[1]);
+
+            // if( fabs(bot_to_targetP_angle) < 0.3){ // less than 17 deg
+            if(done_turning){
+                BT_all_stop(1);
+                return 3;
+            }else{
+                return 2;
+            } 
+        }
+        case 3: {
+
+            //Run PID to targetP - should be able to turn a bit as well
+            BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, 25);
+
+            if(bot_to_targetP_dist < 100){ //next state
+                BT_all_stop(0);
+                return 4;
+            }else if ( fabs(bot_to_targetP_angle) > 1){ // more than 60 deg
+                BT_all_stop(0);
+                return 2;
+            }else{
+                return 3;
+            }
+            
+        }
+        case 4: {
+
+            //rotation PID
+            int done_turning = turn_to_target(botHeading[0], botHeading[1], bot_to_ball_vector[0], bot_to_ball_vector[1]);
+
+            // if( fabs(bot_to_targetP_angle) < 0.3){ // less than 17 deg
+            if(done_turning){
+                BT_all_stop(1);
+                return 5;
+            }else{
+                return 4;
+            } 
+
+            
+        }
+        case 5: {
+            //Run PID to targetP - should be able to turn a bit as well
+            BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, 60);
+            BT_motor_port_start(MOTOR_C, -100);
+
+            if(bot_to_ball_dist < 100){ //next state
+                BT_all_stop(0);
+                return 6;
+            }else if ( fabs(bot_to_ball_angle) > 1){ // more than 60 deg
+                BT_all_stop(0);
+                return 1 // reset entire thing;
+            }else{
+                return 5;
+            }
+
+        }
+        case 6: {
+            BT_all_stop(0);
+
+            if(bot_to_ball_dist > 200){ 
+                BT_all_stop(0);
+                return 5; //start pid again
+            }else{
+                return 6;
+            }
+
+            return 6; //stay in 206
+        }
+
+
+    }
+
+    return 1;
+}
 
 
 int get_new_state_Chase(struct RoboAI *ai, int old_state){
