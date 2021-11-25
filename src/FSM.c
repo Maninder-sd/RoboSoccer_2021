@@ -22,6 +22,13 @@ int get_new_state_Penalty (struct RoboAI *ai, int old_state);
 int get_new_state_soccer(struct RoboAI *ai, int old_state) {
 
     static double target_pos[2];
+    static double opponent[2];
+
+    if (ai->st.opp) {
+        opponent[0] = ai->st.opp->cx;
+        opponent[1] = ai->st.opp->cy;
+    }
+
 
     double ballPos[2] = {ai->st.old_bcx, ai->st.old_bcy};
     double botHeading[2] = {ai->st.sdx, ai->st.sdy};
@@ -35,13 +42,7 @@ int get_new_state_soccer(struct RoboAI *ai, int old_state) {
     static double targetP[2] = {-1, -1};
     
     double goal_to_ball[2] = {ballPos[0]- goalPos[0], ballPos[1] - goalPos[1] };
-    int is_bot_off_side = (ballPos[0] - botPos[0] <= 0);
-
-    if (!ai->st.side) {
-        
-    }
-
-    double bot_to_ball[2]
+    
 
     double magnitude = magnitude_vector(goal_to_ball);
     // make it vector of magnitude GOOD_BALL_DIST in the balls direction
@@ -52,8 +53,11 @@ int get_new_state_soccer(struct RoboAI *ai, int old_state) {
     targetP[0] = ballPos[0] + goal_to_ball[0];
     targetP[1] = ballPos[1] + goal_to_ball[1];
 
-    double opponent[2] = {ai->st.opp->cx, ai->st.opp->cy};
+
+    int is_bot_off_side = (ballPos[0] - botPos[0] <= 0);
     int is_opponent_offside = (ballPos[0] - opponent[0] > 0);
+
+    //flip offside booleans based on home goal position
     if (ai->st.side) {
         is_bot_off_side = !is_bot_off_side;
         is_opponent_offside = !is_opponent_offside;
@@ -68,30 +72,35 @@ int get_new_state_soccer(struct RoboAI *ai, int old_state) {
 
     double bot_to_ball_angle = getAngle_vector(bot_to_ball_vector, botHeading); 
 
-    int is_opponent_closer = (magnitude_vector(opponent_to_ball) <= magnitude_vector(bot_to_targetP_vector));
+    int is_opponent_closer = (magnitude_vector(opponent_to_ball) <= bot_to_ball_dist);
     int ball_in_middle = (ballPos[1] > IM_SIZE_Y * 0.25 && ballPos[1] < IM_SIZE_Y * 0.75);
 
     double angle_thresh = 0.1;
     double own_goal_x = fabs(IM_SIZE_X - goalPos[0]);
     int bot_above_ball = botPos[1] - ballPos[1] > 0;
 
+    printf("bot offside : %d, opponent_closer : %d, opp offside : %d\n", is_bot_off_side, is_opponent_closer, is_opponent_offside);
+
     //attack mode
     if (!is_bot_off_side && (!is_opponent_closer || is_opponent_offside)) {
+        printf("attack mode\n");
         target_pos[0] = targetP[0]; target_pos[1] = targetP[1];
     } 
 
     //defense mode
     else if (!is_bot_off_side && is_opponent_closer) {
+        printf("defense mode\n");
         target_pos[0] = ballPos[0] - own_goal_x; target_pos[1] = ballPos[1] - goalPos[1];
 
         double mg = magnitude_vector(target_pos);
-        target_pos[0] = ballPos[0] + GOOD_BALL_DIST*target_pos[0] / mg;
-        target_pos[1] = ballPos[1] + GOOD_BALL_DIST*target_pos[1] / mg;
+        target_pos[0] = ballPos[0] + 5*GOOD_BALL_DIST*target_pos[0] / mg;
+        target_pos[1] = ballPos[1] + 5*GOOD_BALL_DIST*target_pos[1] / mg;
         
     }
 
     //offside deflect down
     else if (is_bot_off_side && ball_in_middle && bot_above_ball) {
+        printf("offside down\n");
         double corner_target[2] = {own_goal_x, 10};
         target_pos[0] = corner_target[0] - ballPos[0]; target_pos[1] = corner_target[1] - ballPos[1];
 
@@ -103,6 +112,7 @@ int get_new_state_soccer(struct RoboAI *ai, int old_state) {
 
     //offside deflect up
     else if (is_bot_off_side && ball_in_middle && !bot_above_ball) {
+        printf("offside up\n");
         double corner_target[2] = {own_goal_x, 10};
         target_pos[0] = corner_target[0] - ballPos[0]; target_pos[1] = corner_target[1] - ballPos[1];
 
@@ -114,6 +124,7 @@ int get_new_state_soccer(struct RoboAI *ai, int old_state) {
 
     //offside flee
     else {
+        printf("offside retreat");
         target_pos[0] = own_goal_x - 20; target_pos[1] = goalPos[1];
     };
 
@@ -183,12 +194,12 @@ int get_new_state_soccer(struct RoboAI *ai, int old_state) {
             BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, 60);
             BT_motor_port_start(MOTOR_C, -100);
 
-            if(bot_to_ball_dist < 100){ //next state
+            if(bot_to_ball_dist > 200){ //next state
                 BT_all_stop(0);
                 return 6;
             }else if ( fabs(bot_to_ball_angle) > 1){ // more than 60 deg
                 BT_all_stop(0);
-                return 1 // reset entire thing;
+                return 1; // reset entire thing;
             }else{
                 return 5;
             }

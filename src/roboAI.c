@@ -845,6 +845,8 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
       ai->st.state = get_new_state_Penalty(ai, ai->st.state);
     }else if ( 200< ai->st.state  ){
       ai->st.state = get_new_state_Chase(ai, ai->st.state);
+    } else {
+      ai->st.state = get_new_state_soccer(ai, ai->st.state);
     }
     
     //  double ball_pos[2] = {IM_SIZE_X-1, IM_SIZE_Y/2}, 
