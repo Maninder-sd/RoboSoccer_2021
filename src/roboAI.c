@@ -32,6 +32,7 @@
 #include "test.c"
 #include "linearFilter.c"
 #include "mathHelpers.c"
+#include "utils.c"
 
 #include "FSM.c"
 #include "PID.c"
@@ -849,7 +850,7 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
   *****************************************************************************/
   
   
-  
+
   // note our angles are expected to be in range [0, 360)
   // take out those unexpected angle changes
   if (ai->st.self != NULL && ai->st.ball != NULL) {
@@ -913,7 +914,7 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
   // turn PID
 
   
-//  fprintf(stderr,"Just trackin'!\n");	// bot, opponent, and ball.
+  //  fprintf(stderr,"Just trackin'!\n");	// bot, opponent, and ball.
   old_heading_x = ai->st.sdx;
   old_heading_y = ai->st.sdy;
   frame_count++;
