@@ -772,7 +772,8 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
   // Carry out self id process.
   fprintf(stderr,"Initial state, self-id in progress...\n");
     
-  id_bot(ai,blobs);
+  // id_bot(ai,blobs);
+  ai->st.state+=1;
   if ((ai->st.state%100)!=0)	// The id_bot() routine will change the AI state to initial state + 1
   {				// if robot identification is successful.
   if (ai->st.self->cx>=512) {
@@ -784,23 +785,34 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
     }
     goal_center_y = IM_SIZE_Y / 2;
 
-   BT_all_stop(0);
+
+    
+
+  //  BT_all_stop(0);
    
    fprintf(stderr,"Self-ID complete. Current position: (%f,%f), current heading: [%f, %f], blob direction=[%f, %f], AI state=%d\n",ai->st.self->cx,ai->st.self->cy,ai->st.smx,ai->st.smy,ai->st.sdx,ai->st.sdy,ai->st.state);
    
    if (ai->st.self!=NULL)
    {
+
+      // correct heading to be pointing towards the ball
+      if (dottie(ai->st.sdx, ai->st.sdy, 1+(-2*ai->st.side), 0) < 0){
+        ai->st.sdx*=-1; ai->st.sdy*=-1;
+      }
+
+  
        // This checks that the motion vector and the blob direction vector
        // are pointing in the same direction. If they are not (the dot product
        // is less than 0) it inverts the blob direction vector so it points
        // in the same direction as the motion vector.
-       if (((ai->st.smx*ai->st.sdx)+(ai->st.smy*ai->st.sdy))<0)
-       {
-           ai->st.self->dx*=-1.0;
-           ai->st.self->dy*=-1.0;
-           ai->st.sdx*=-1;
-           ai->st.sdy*=-1;
-       }
+       // >>>>>>> temp commented out
+      //  if (((ai->st.smx*ai->st.sdx)+(ai->st.smy*ai->st.sdy))<0)
+      //  {
+      //      ai->st.self->dx*=-1.0;
+      //      ai->st.self->dy*=-1.0;
+      //      ai->st.sdx*=-1;
+      //      ai->st.sdy*=-1;
+      //  }
        old_dx=ai->st.sdx;
        old_dy=ai->st.sdy;
        initial_heading_x = ai->st.sdx;
@@ -808,6 +820,8 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
         // printf("initial: headingDir_x %f headingDir_y %f\n ", initial_heading_x,initial_heading_y);
        initial_gyro_angle = BT_read_gyro_sensor(GYRO_PORT);
           //  printf("initial_gyro_angle reading: %d\n", initial_gyro_angle);
+
+
 
    }
    if (ai->st.opp!=NULL)
