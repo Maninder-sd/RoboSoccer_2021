@@ -18,6 +18,7 @@ int get_new_state_Penalty (struct RoboAI *ai, int old_state);
 #define GOOD_BALL_DIST 150
 #define ANGLE_RESET 0.5 //this is for Chase FSM
 
+#define OBSTACLE_AVOID_DISTANCE IM_SIZE_Y / 3
 #define FORWARD_MAX_SPEED 30
 #define KICK_SPEED 80
 
@@ -261,6 +262,8 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
 
     double bot_to_ball_vector[2] = {ballPos[0] - botPos[0], ballPos[1] - botPos[1]};
     double bot_to_ball_dist = magnitude_vector(bot_to_ball_vector);
+
+    int target_above_middle = targetP[1] < IM_SIZE_Y;
     
     double bot_to_targetP_vector[2] = {targetP[0] - ai->st.old_scx, targetP[1] - ai->st.old_scy};
     double bot_to_targetP_dist = magnitude_vector(bot_to_targetP_vector);
@@ -311,6 +314,10 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
 
         //  BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, FORWARD_MAX_SPEED);
 
+    int sign = target_above_middle * 2 - 1;
+    if (fabs(getAngle_vector(bot_to_ball_vector, goal_to_ball)) > 2) {
+        targetP[1] += OBSTACLE_AVOID_DISTANCE * sign;
+    }
 
          simple_straight_to_target_PID(bot_to_targetP_dist,  bot_to_targetP_angle);  // Maninder- I will test this later
 
