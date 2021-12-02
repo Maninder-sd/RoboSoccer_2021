@@ -48,17 +48,17 @@ int turn_to_target(double current_heading_x, double current_heading_y, double ta
   // printf("current_heading_standard_angle: %f  target_heading_standard_angle: %f\n", current_heading_standard_angle, target_heading_standard_angle);
 
   double angle_error = boundAngle180To180(target_heading_standard_angle - current_heading_standard_angle);
-  printf("angle_error: %f\n", angle_error);
+  // printf("angle_error: %f\n", angle_error);
   double pid_out = turn_on_spot_PID(angle_error);
   double MAX_SPEED = 100;
   double MIN_SPEED = 10;
   int motor_out = round(pid_out * MAX_SPEED);
-  printf("motor_out: %d\n", motor_out);
+  // printf("motor_out: %d\n", motor_out);
 
-  // TODO : remove below if no work
-  if (motor_out != 0 && abs(motor_out) < MIN_SPEED){ //sets min power the motors should get
-    motor_out = MIN_SPEED * (motor_out/abs(motor_out));
-  }
+  // // TODO : remove below if no work
+  // if (motor_out != 0 && abs(motor_out) < MIN_SPEED){ //sets min power the motors should get
+  //   motor_out = MIN_SPEED * (motor_out/abs(motor_out));
+  // }
 
 
   fflush(stdout); 
