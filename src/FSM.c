@@ -394,10 +394,16 @@ int get_new_state_Penalty (struct RoboAI *ai, int old_state){
     }
 
 
+
     double bot_to_ball_vector[2] = {ballPos[0] - botPos[0], ballPos[1] - botPos[1]};
     double bot_to_ball_dist = magnitude_vector(bot_to_ball_vector);
     
-    double bot_to_targetP_vector[2] = {targetP[0] - ai->st.old_scx, targetP[1] - ai->st.old_scy};
+    double bot_to_targetP_vector[2] = {targetP[0] - botPos[0], targetP[1] - botPos[0]};
+    double target_to_goal_vector[2] = {goalPos[0] - targetP[0], goalPos[1] - targetP[1]};
+
+    double beta = getAngle_vector(bot_to_targetP_vector, target_to_goal_vector);
+    printf("beta angle : %f\n", beta);
+
     double bot_to_targetP_dist = magnitude_vector(bot_to_targetP_vector);
 
 
@@ -433,7 +439,7 @@ int get_new_state_Penalty (struct RoboAI *ai, int old_state){
         // printf("drive_straight_output: %f\n", drive_straight_output);
         BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, drive_straight_output);
 
-            if(bot_to_targetP_dist < 100){ //next state
+            if(fabs(beta) < .1){ //next state
                 BT_all_stop(0);
                 return 104;
             }else{
