@@ -719,7 +719,7 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
                               
   ** Do not change the behaviour of the robot ID routine **
  **************************************************************************/
-  printf("AI_main() called...\n");
+  // printf("AI_main() called...\n");
   static double ux,uy,len,mmx,mmy,px,py,lx,ly,mi;
   double angDif, lPow,rPow;
   char line[1024];
@@ -890,7 +890,7 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
     // printf("gryo reading: %d\n", current_gyro_reading);
     double gyro_angle_change = (double)(initial_gyro_angle - current_gyro_reading);
     rotate_vector(&our_heading_x, &our_heading_y, gyro_angle_change);
-    printf("ai->st.sdx: %f, ai->st.sdy: %f, our_heading_x: %f, our_heading_y: %f\n", ai->st.sdx, ai->st.sdy, our_heading_x, our_heading_y);
+    // printf("ai->st.sdx: %f, ai->st.sdy: %f, our_heading_x: %f, our_heading_y: %f\n", ai->st.sdx, ai->st.sdy, our_heading_x, our_heading_y);
     // ai->st.sdx = our_heading_x;
     // ai->st.sdy  = our_heading_y;
     // TODO: clean up here and also set self->dx and dy

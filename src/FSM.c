@@ -314,7 +314,7 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
 
          simple_straight_to_target_PID(bot_to_targetP_dist,  bot_to_targetP_angle);  // Maninder- I will test this later
 
-            if(bot_to_targetP_dist < 100){ //next state
+            if(bot_to_targetP_dist < 50){ //next state
                 BT_all_stop(0);
                 return 204;
             }else if ( fabs(bot_to_targetP_angle) > angle_bound){ // more than 40 deg
