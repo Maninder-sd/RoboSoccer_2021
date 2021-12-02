@@ -309,10 +309,10 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
         // double drive_straight_output = drive_straight_to_target_PID(distance_err); 
         // BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, 50*drive_straight_output);
 
-         BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, FORWARD_MAX_SPEED);
+        //  BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, FORWARD_MAX_SPEED);
 
 
-        //  simple_straight_to_target_PID(bot_to_targetP_dist,  bot_to_targetP_angle);  // Maninder- I will test this later
+         simple_straight_to_target_PID(bot_to_targetP_dist,  bot_to_targetP_angle);  // Maninder- I will test this later
 
             if(bot_to_targetP_dist < 100){ //next state
                 BT_all_stop(0);
