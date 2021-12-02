@@ -97,8 +97,12 @@ double magnitude_vector(double v[2]){
 }
 
 double getAngle_vector(double u[2] , double v[2]){
-    // Returns the dot product of the two vectors
-    return acos(dottie_vector(u, v) / sqrt(dottie_vector(u, u)* dottie_vector(v, v)));
+    // Returns the angle between the 2 vectors
+    // positive means u into v is counterclockwise AS VECTORS WILL APPEAR ON SCREEN**
+    // negative means u into v is clockwise AS VECTORS WILL APPEAR ON SCREEN**
+    // ** recall the y axis is flipped
+    //
+    return -1 * acos(dottie_vector(u, v) / sqrt(dottie_vector(u, u)* dottie_vector(v, v))) * crossie_sign(u[0], u[1], v[0], v[1]) ;
 }
 
 
