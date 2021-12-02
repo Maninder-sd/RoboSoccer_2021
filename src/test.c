@@ -87,14 +87,14 @@ int  simple_straight_to_target_PID(double distance_err, double angle_error) {
     1 - bot_heading_to_target_angle
 
     -20 deg< angle_error < 20 deg otherwise angle too steep
-    20 deg = 0.35 rad
+    40 deg = 0.70 rad
 
     return 1 if running
     return 0 if done
     return -1 if angle too steep 
   */
 
-  double angle_bound=0.35;
+  double angle_bound=0.70;
 
   static double old_error[2] = {0,0};
   static double i_errors[INTEGRATION_DEPTH][2] ;
@@ -109,14 +109,15 @@ int  simple_straight_to_target_PID(double distance_err, double angle_error) {
   double I_error[2]={0,0}; //the running sum of i_errors[]
   i_errors[i_index][0] = distance_err;
   i_errors[i_index][1] = angle_error;
-  i_index =(i_index+1) % INTEGRATION_DEPTH;
+  
   for(int i=0; i<INTEGRATION_DEPTH; i++){
     I_error[0]+=i_errors[i][0];
     I_error[1]+=i_errors[i][1];
   }
   // ---------------------------------------
+  i_index =(i_index+1) % INTEGRATION_DEPTH;
 
-  if(fabs(P_error[1]) > angle_bound){ // this PID stops motors if angle to steep
+  if(fabs(P_error[1]) > 1){ // this PID stops motors if angle too steep 60deg
     BT_motor_port_stop(RIGHT_MOTOR, 0);
     BT_motor_port_stop(LEFT_MOTOR, 0);
   }
