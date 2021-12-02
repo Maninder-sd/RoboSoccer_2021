@@ -79,6 +79,73 @@ double align_straight_to_target_PID(double lateral_err) {
   
 }
 
+
+int  simple_straight_to_target_PID(double distance_err, double angle_error) {
+  /*
+    Index rules:
+    0 - distance_err
+    1 - bot_heading_to_target_angle
+
+    -20 deg< angle_error < 20 deg otherwise angle too steep
+    20 deg = 0.35 rad
+
+    return 1 if running
+    return 0 if done
+    return -1 if angle too steep 
+  */
+
+  double angle_bound=0.35;
+
+  static double old_error[2] = {0,0};
+  static double i_errors[INTEGRATION_DEPTH][2] ;
+  static int i_index; //index to change 
+
+  double P_error[2] = {distance_err, angle_error};
+
+  // We dont use the ID in PID -----------
+  double D_error[2] = {(P_error[0] - old_error[0])/ 0.1, (P_error[1] - old_error[1])/ 0.1 };
+  old_error[0] = distance_err;
+  old_error[1] = angle_error;
+  double I_error[2]={0,0}; //the running sum of i_errors[]
+  i_errors[i_index][0] = distance_err;
+  i_errors[i_index][1] = angle_error;
+  i_index =(i_index+1) % INTEGRATION_DEPTH;
+  for(int i=0; i<INTEGRATION_DEPTH; i++){
+    I_error[0]+=i_errors[i][0];
+    I_error[1]+=i_errors[i][1];
+  }
+  // ---------------------------------------
+
+  if(fabs(P_error[1]) > angle_bound){ // this PID stops motors if angle to steep
+    BT_motor_port_stop(RIGHT_MOTOR, 0);
+    BT_motor_port_stop(LEFT_MOTOR, 0);
+    return 0;
+  }
+
+  double motorR_speed, motorL_speed;
+  if(P_error[0] > 200){ 
+    motorR_speed = 100;
+    motorL_speed = 100;
+// Args:
+//   angle_error : if negative turn right motor more  crossie(heading_dir, target_dir) <0
+//                if positive turn left motor more crossie(heading_dir, target_dir) > 0
+//                     this is because y axis is flipped
+    double turn_speed = (10*  P_error[1]/angle_bound );  
+    motorR_speed -= turn_speed;
+    motorL_speed += turn_speed;
+  }else{ // PID slows bot if close enough and turns off other pid
+    motorR_speed = 20;
+    motorL_speed = 20;
+  }
+
+
+  BT_motor_port_start(RIGHT_MOTOR, motorR_speed);
+  BT_motor_port_start(LEFT_MOTOR, motorL_speed);
+
+  return 1; // todo: more here
+}
+
+
 double drive_straight_to_target_PID(double distance_err) {
 
   static double old_error = 0;
@@ -108,6 +175,8 @@ double drive_straight_to_target_PID(double distance_err) {
   } else {
     return output;
   }
+
+  
   
 }
 

@@ -385,11 +385,16 @@ int get_new_state_Penalty (struct RoboAI *ai, int old_state){
     printf("ballPos[0]: %f, ballPos[1]: %f\n", ballPos[0], ballPos[1]);
     printf("targetPos[0]: %f, targetPos[1]: %f\n", targetPos[0], targetPos[1]);
 
-    // TODO: move appropriate stuff into state 101 - so computations dont get repeated 
+
     double bot_to_ball_vector[2] = {ballPos[0] - botPos[0], ballPos[1] - botPos[1]};
     double bot_to_ball_dist = magnitude_vector(bot_to_ball_vector);
     
     double bot_to_targetP_vector[2] = {targetPos[0] - botPos[0], targetPos[1] - botPos[1]};
+    double target_to_goal_vector[2] = {goalPos[0] - targetPos[0], goalPos[1] - targetPos[1]};
+
+    double beta = getAngle_vector(bot_to_targetP_vector, target_to_goal_vector);
+    printf("beta angle : %f\n", beta);
+
     double bot_to_targetP_dist = magnitude_vector(bot_to_targetP_vector);
 
 
@@ -436,8 +441,8 @@ int get_new_state_Penalty (struct RoboAI *ai, int old_state){
         printf("drive_straight_output: %f\n", drive_straight_output);
         BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, MAX_SPEED * drive_straight_output);
 
-            if(bot_to_targetP_dist < 100){ //next state
-                BT_all_stop(1);
+            if(fabs(beta) < .1){ //next state
+                BT_all_stop(0);
                 return 104;
             }else{
                 return 103;
