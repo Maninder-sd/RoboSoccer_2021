@@ -140,8 +140,8 @@ int get_new_state_soccer(struct RoboAI *ai, int old_state) {
 
     double bot_to_targetP_angle = getAngle_vector(bot_to_targetP_vector, botHeading);
 
-    switch (old_state) {
-              case 1: {
+ switch (old_state){
+        case 1: {
             
             //action
 
@@ -167,26 +167,44 @@ int get_new_state_soccer(struct RoboAI *ai, int old_state) {
         case 3: {
 
             //Run PID to targetP - should be able to turn a bit as well
-            BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, FORWARD_MAX_SPEED);
+            
 
-            if(bot_to_targetP_dist < 100){ //next state
+        // double distance_err, lateral_err;
+
+        // finding_errors(ballPos, targetP, goalPos, &distance_err, &lateral_err); // distance error is always positive
+        // double drive_straight_output = drive_straight_to_target_PID(distance_err); 
+        // BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, 50*drive_straight_output);
+
+        //  BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, FORWARD_MAX_SPEED);
+
+
+         simple_straight_to_target_PID(bot_to_targetP_dist,  bot_to_targetP_angle);  // Maninder- I will test this later
+
+            if(bot_to_targetP_dist < 50){ //next state
                 BT_all_stop(0);
                 return 4;
-            }else if ( fabs(bot_to_targetP_angle) > angle_bound){ // more than 60 deg
+            }else if ( fabs(bot_to_targetP_angle) > angle_bound){ // more than 40 deg
                 BT_all_stop(0);
                 return 2;
             }else{
                 return 3;
             }
+            
         }
         case 4: {
+
             //rotation PID
             int done_turning = turn_to_target(botHeading[0], botHeading[1], bot_to_ball_vector[0], bot_to_ball_vector[1]);
 
             // if( fabs(bot_to_targetP_angle) < 0.3){ // less than 17 deg
             if(done_turning){
                 BT_all_stop(1);
+                BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, 20);
+                sleep(1);
                 return 5;
+            }else if ( bot_to_targetP_dist >100 ){ // targetP changed - Hopefully this prevents going to kicking states state 5/6 
+                BT_all_stop(0);
+                return 1; // reset entire thing;
             }else{
                 return 4;
             } 
@@ -194,14 +212,15 @@ int get_new_state_soccer(struct RoboAI *ai, int old_state) {
             
         }
         case 5: {
-            //Run PID to targetP - should be able to turn a bit as well
+            // just go straight and score
             BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, 60);
             BT_motor_port_start(MOTOR_C, -100);
+            printf("bot_to_ball_dist %f \n",bot_to_ball_dist);
 
             if(bot_to_ball_dist > 200){ //next state
                 BT_all_stop(0);
                 return 6;
-            }else if ( fabs(bot_to_ball_angle) > 1){ // more than 60 deg
+            }else if ( fabs(bot_to_ball_angle) > angle_bound){ // more than 60 deg
                 BT_all_stop(0);
                 return 1; // reset entire thing;
             }else{
@@ -212,9 +231,9 @@ int get_new_state_soccer(struct RoboAI *ai, int old_state) {
         case 6: {
             BT_all_stop(0);
 
-            if(bot_to_ball_dist > 200){ 
+            if(bot_to_targetP_dist > 200){ //idk if should be bot_to_targetP_dist or bot_to_ball_dist
                 BT_all_stop(0);
-                return 5; //start pid again
+                return 1; //start pid again
             }else{
                 return 6;
             }
@@ -222,9 +241,8 @@ int get_new_state_soccer(struct RoboAI *ai, int old_state) {
             return 6; //stay in 206
         }
 
-
+        return 1;
     }
-
     return 1;
 }
 
