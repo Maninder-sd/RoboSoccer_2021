@@ -117,21 +117,22 @@ int  simple_straight_to_target_PID(double distance_err, double angle_error) {
   // ---------------------------------------
   i_index =(i_index+1) % INTEGRATION_DEPTH;
 
-  if(fabs(P_error[1]) > 1){ // this PID stops motors if angle too steep 60deg
+  if(fabs(P_error[1]) > angle_bound){ // this PID stops motors if angle too steep 60deg
     BT_motor_port_stop(RIGHT_MOTOR, 0);
     BT_motor_port_stop(LEFT_MOTOR, 0);
-    return 0;
+    printf("Amgle too steep \n");
+    return -1;
   }
 
-  double motorR_speed, motorL_speed;
+  int  motorR_speed, motorL_speed;
   if(P_error[0] > 200){ 
-    motorR_speed = 100;
-    motorL_speed = 100;
+    motorR_speed = 80;
+    motorL_speed = 80;
 // Args:
 //   angle_error : if negative turn right motor more  crossie(heading_dir, target_dir) <0
 //                if positive turn left motor more crossie(heading_dir, target_dir) > 0
 //                     this is because y axis is flipped
-    double turn_speed = (10*  P_error[1]/angle_bound );  
+    double turn_speed = (10*  P_error[1]/angle_bound );  // max is 10
     motorR_speed -= turn_speed;
     motorL_speed += turn_speed;
   }else{ // PID slows bot if close enough and turns off other pid
@@ -139,7 +140,7 @@ int  simple_straight_to_target_PID(double distance_err, double angle_error) {
     motorL_speed = 20;
   }
 
-
+  printf("motorL_speed %d motorL_speed %d",motorL_speed,motorR_speed );
   BT_motor_port_start(RIGHT_MOTOR, motorR_speed);
   BT_motor_port_start(LEFT_MOTOR, motorL_speed);
 
