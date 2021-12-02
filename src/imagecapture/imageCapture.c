@@ -1419,10 +1419,10 @@ void kbHandler(unsigned char key, int x, int y)
  if (key=='f') {if (printFPS==0) printFPS=1; else printFPS=0;}
 
  // NXT robot manual override
- if (key=='i') {if (DIR_FWD==0) {DIR_FWD=1; DIR_L=0; DIR_R=0; DIR_BACK=0; BT_drive(LEFT_MOTOR, RIGHT_MOTOR,75);} else {DIR_FWD=0; BT_all_stop(0);}}
- if (key=='j') {if (DIR_L==0) {DIR_L=1; DIR_R=0; DIR_FWD=0; DIR_BACK=0; BT_turn(LEFT_MOTOR, 50, RIGHT_MOTOR, -50);} else {DIR_L=0; BT_all_stop(0);}}
- if (key=='l') {if (DIR_R==0) {DIR_R=1; DIR_L=0; DIR_FWD=0; DIR_BACK=0; BT_turn(LEFT_MOTOR, -50, RIGHT_MOTOR, 50);} else {DIR_R=0; BT_all_stop(0);}}
- if (key=='k') {if (DIR_BACK==0) {DIR_BACK=1; DIR_L=0; DIR_R=0; DIR_FWD=0; BT_drive(LEFT_MOTOR, RIGHT_MOTOR, -75);} else {DIR_BACK=0; BT_all_stop(0);}}
+ if (key=='i') {if (DIR_FWD==0) {DIR_FWD=1; DIR_L=0; DIR_R=0; DIR_BACK=0; BT_drive(LEFT_MOTOR, RIGHT_MOTOR,75);} else {DIR_FWD=0; BT_all_stop(1);}}
+ if (key=='j') {if (DIR_L==0) {DIR_L=1; DIR_R=0; DIR_FWD=0; DIR_BACK=0; BT_turn(LEFT_MOTOR, 50, RIGHT_MOTOR, -50);} else {DIR_L=0; BT_all_stop(1);}}
+ if (key=='l') {if (DIR_R==0) {DIR_R=1; DIR_L=0; DIR_FWD=0; DIR_BACK=0; BT_turn(LEFT_MOTOR, -50, RIGHT_MOTOR, 50);} else {DIR_R=0; BT_all_stop(1);}}
+ if (key=='k') {if (DIR_BACK==0) {DIR_BACK=1; DIR_L=0; DIR_R=0; DIR_FWD=0; BT_drive(LEFT_MOTOR, RIGHT_MOTOR, -75);} else {DIR_BACK=0; BT_all_stop(1);}}
  if (key=='o') {BT_all_stop(0);doAI=0;}	// <-- Important!
 }
 
