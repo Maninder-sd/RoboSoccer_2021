@@ -23,7 +23,7 @@ double turn_on_spot_PID(double angle_error) {
 
   old_error = p_error;
 
-  double k_p = 1, k_i = 0, k_d = 0, k_s = 0.25;
+  double k_p = 1, k_i = 0, k_d = 0, k_s = 0.15;
   double k_sum_pid = k_p + k_d + k_i;
   double normalized_k_p = k_p / k_sum_pid, normalized_k_i = k_i / k_sum_pid, normalized_k_d = k_d / k_sum_pid; 
   double output = k_s * (normalized_k_p * p_error + normalized_k_i * i_error + normalized_k_d * d_error);
@@ -51,12 +51,19 @@ int turn_to_target(double current_heading_x, double current_heading_y, double ta
   printf("angle_error: %f\n", angle_error);
   double pid_out = turn_on_spot_PID(angle_error);
   double MAX_SPEED = 100;
+  double MIN_SPEED = 10;
   int motor_out = round(pid_out * MAX_SPEED);
-  // printf("motor_out: %d\n", motor_out);
+  printf("motor_out: %d\n", motor_out);
+
+  // TODO : remove below if no work
+  if (motor_out != 0 && abs(motor_out) < MIN_SPEED){ //sets min power the motors should get
+    motor_out = MIN_SPEED * (motor_out/abs(motor_out));
+  }
+
 
   fflush(stdout); 
 
-  if (fabs(angle_error) < 0.15)
+  if (fabs(angle_error) < 0.1)
   {             //event = facing ball
     printf("condition met\n");
     BT_motor_port_stop(LEFT_MOTOR, 1);

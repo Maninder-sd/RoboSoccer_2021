@@ -748,15 +748,15 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
   char rport=MOTOR_B;
       
 
-  if (!once_ran) {
-    once_ran = 1;
-    initialize_filter(&self_bot_linear_filter_pos_x, AVG_FILTER_SIZE);
-    initialize_filter(&self_bot_linear_filter_pos_y, AVG_FILTER_SIZE);
-    initialize_filter(&self_bot_linear_filter_vel_x, AVG_FILTER_SIZE);
-    initialize_filter(&self_bot_linear_filter_vel_y, AVG_FILTER_SIZE);
-    initialize_filter(&self_bot_linear_filter_heading_x, AVG_FILTER_SIZE);
-    initialize_filter(&self_bot_linear_filter_heading_y, AVG_FILTER_SIZE);
-  }    
+  // if (!once_ran) {
+  //   once_ran = 1;
+    // initialize_filter(&self_bot_linear_filter_pos_x, AVG_FILTER_SIZE);
+    // initialize_filter(&self_bot_linear_filter_pos_y, AVG_FILTER_SIZE);
+    // initialize_filter(&self_bot_linear_filter_vel_x, AVG_FILTER_SIZE);
+    // initialize_filter(&self_bot_linear_filter_vel_y, AVG_FILTER_SIZE);
+    // initialize_filter(&self_bot_linear_filter_heading_x, AVG_FILTER_SIZE);
+    // initialize_filter(&self_bot_linear_filter_heading_y, AVG_FILTER_SIZE);
+  // }    
   /************************************************************
    * Standard initialization routine for starter code,
    * from state **0 performs agent detection and initializes
@@ -769,11 +769,23 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
    ************************************************************/
  if (ai->st.state==0||ai->st.state==100||ai->st.state==200)  	// Initial set up - find own, ball, and opponent blobs
  {
+
+  old_dx=0, old_dy=0;
+  once_ran = 0; //TODO: 
+  frame_count = 0;
+  old_heading_x = 0, old_heading_y = 0;
+  initial_gyro_angle = 0;
+  initial_heading_x = -1, initial_heading_y = -1;
   // Carry out self id process.
   fprintf(stderr,"Initial state, self-id in progress...\n");
     
-  // id_bot(ai,blobs);
-  ai->st.state+=1;
+  // id_bot(ai,blobs); // commenting out the drive for initial direction 
+  // 3 lines below are needed from id_bot
+  track_agents(ai,blobs);
+  if (ai->st.selfID==1) {
+    ai->st.state+=1;
+  } 
+
   if ((ai->st.state%100)!=0)	// The id_bot() routine will change the AI state to initial state + 1
   {				// if robot identification is successful.
   if (ai->st.self->cx>=512) {
@@ -785,9 +797,6 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
     }
     goal_center_y = IM_SIZE_Y / 2;
 
-
-    
-
   //  BT_all_stop(0);
    
    fprintf(stderr,"Self-ID complete. Current position: (%f,%f), current heading: [%f, %f], blob direction=[%f, %f], AI state=%d\n",ai->st.self->cx,ai->st.self->cy,ai->st.smx,ai->st.smy,ai->st.sdx,ai->st.sdy,ai->st.state);
@@ -796,16 +805,18 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
    {
 
       // correct heading to be pointing towards the ball
-      if (dottie(ai->st.sdx, ai->st.sdy, 1+(-2*ai->st.side), 0) < 0){
+      double bot_to_middle_x = IM_SIZE_X / 2 - ai->st.old_scx;
+      double bot_to_middle_y = IM_SIZE_Y / 2 - ai->st.old_scy;
+      if (dottie(ai->st.sdx, ai->st.sdy, bot_to_middle_x, bot_to_middle_y) < 0){
         ai->st.sdx*=-1; ai->st.sdy*=-1;
       }
-
   
-       // This checks that the motion vector and the blob direction vector
-       // are pointing in the same direction. If they are not (the dot product
-       // is less than 0) it inverts the blob direction vector so it points
-       // in the same direction as the motion vector.
-       // >>>>>>> temp commented out
+
+      // This checks that the motion vector and the blob direction vector
+      // are pointing in the same direction. If they are not (the dot product
+      // is less than 0) it inverts the blob direction vector so it points
+      // in the same direction as the motion vector.
+      // >>>>>>> temp commented out
       //  if (((ai->st.smx*ai->st.sdx)+(ai->st.smy*ai->st.sdy))<0)
       //  {
       //      ai->st.self->dx*=-1.0;
@@ -813,16 +824,13 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
       //      ai->st.sdx*=-1;
       //      ai->st.sdy*=-1;
       //  }
-       old_dx=ai->st.sdx;
-       old_dy=ai->st.sdy;
-       initial_heading_x = ai->st.sdx;
-       initial_heading_y = ai->st.sdy;
-        // printf("initial: headingDir_x %f headingDir_y %f\n ", initial_heading_x,initial_heading_y);
-       initial_gyro_angle = BT_read_gyro_sensor(GYRO_PORT);
-          //  printf("initial_gyro_angle reading: %d\n", initial_gyro_angle);
-
-
-
+      old_dx=ai->st.sdx;
+      old_dy=ai->st.sdy;
+      initial_heading_x = ai->st.sdx;
+      initial_heading_y = ai->st.sdy;
+      // printf("initial: headingDir_x %f headingDir_y %f\n ", initial_heading_x,initial_heading_y);
+      initial_gyro_angle = BT_read_gyro_sensor(GYRO_PORT);
+      //  printf("initial_gyro_angle reading: %d\n", initial_gyro_angle);
    }
    if (ai->st.opp!=NULL)
    {
@@ -882,8 +890,9 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
     // printf("gryo reading: %d\n", current_gyro_reading);
     double gyro_angle_change = (double)(initial_gyro_angle - current_gyro_reading);
     rotate_vector(&our_heading_x, &our_heading_y, gyro_angle_change);
-    ai->st.sdx = our_heading_x;
-    ai->st.sdy  = our_heading_y;
+    printf("ai->st.sdx: %f, ai->st.sdy: %f, our_heading_x: %f, our_heading_y: %f\n", ai->st.sdx, ai->st.sdy, our_heading_x, our_heading_y);
+    // ai->st.sdx = our_heading_x;
+    // ai->st.sdy  = our_heading_y;
     // TODO: clean up here and also set self->dx and dy
       printf("state: %d headingDir_x %f headingDir_y %f\n ", ai->st.state,  our_heading_x, our_heading_y);
     // printf("scx: %f scy: %f", ai->st.old_scx, ai->st.old_scy);
