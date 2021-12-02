@@ -383,6 +383,8 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
 
 
 int get_new_state_Penalty (struct RoboAI *ai, int old_state){
+    double angle_bound=0.20; //penalty must be more precise
+
     // call when in penalty mode
     double ballPos[2] = {ai->st.old_bcx, ai->st.old_bcy};
     double botHeading[2] = {ai->st.sdx, ai->st.sdy};
@@ -419,8 +421,17 @@ int get_new_state_Penalty (struct RoboAI *ai, int old_state){
     switch (old_state)
     {
     case 101: { // Penalty
-        // TODO: set initialization stuff here
-        // ex: MUST move target computation here
+
+        if( fabs(bot_to_targetP_angle) > angle_bound){ //more than 60 deg
+            return 102; //turning
+        }else{
+            return 103; //going forward
+        }
+        return 101;
+    }
+    case 102: {// is it facing the target_p?
+        
+        // get target keeps updating 
         double goal_to_ball[2] = {ballPos[0]- goalPos[0], ballPos[1] - goalPos[1] };
         double magnitude = magnitude_vector(goal_to_ball);
 
@@ -431,9 +442,6 @@ int get_new_state_Penalty (struct RoboAI *ai, int old_state){
         targetPos[0] = ballPos[0] + goal_to_ball[0];
         targetPos[1] = ballPos[1] + goal_to_ball[1];
 
-        return 102;
-    }
-    case 102: {// is it facing the target_p?
         //rotation PID
         int done_turning = turn_to_target(botHeading[0], botHeading[1], bot_to_targetP_vector[0], bot_to_targetP_vector[1]);
 
@@ -450,19 +458,20 @@ int get_new_state_Penalty (struct RoboAI *ai, int old_state){
             //Run PID to targetP
             // BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, 25);
 
-        double distance_err, lateral_err;
-        finding_errors(targetPos, botPos, goalPos, &distance_err, &lateral_err); // distance error is always positive
-        double drive_straight_output = drive_straight_to_target_PID(distance_err); 
-        // printf("drive_straight_output: %f\n", drive_straight_output);
-        BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, MAX_SPEED * drive_straight_output);
+         BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, FORWARD_MAX_SPEED);
 
-            if(fabs(beta) < .1){ //next state
+        //  simple_straight_to_target_PID(bot_to_targetP_dist,  bot_to_targetP_angle);  // Maninder- I will test this later
+
+            if(bot_to_targetP_dist < 50){ //next state
                 BT_all_stop(0);
                 return 104;
+            }else if ( fabs(bot_to_targetP_angle) > angle_bound){ // more than 40 deg
+                BT_all_stop(0);
+                return 102;
             }else{
                 return 103;
             }
-        break;
+        return 103;
     }
     case 104: {
         //rotation PID
@@ -471,34 +480,39 @@ int get_new_state_Penalty (struct RoboAI *ai, int old_state){
         // if( fabs(bot_to_targetP_angle) < 0.3){ // less than 17 deg
         if(done_turning){
             BT_all_stop(1);
+            BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, 20);
+            sleep(1);
             return 105;
         }else{
             return 104;
         } 
-        return 104;
-        break;
-    }
-    case 105: {
-        BT_motor_port_start(LEFT_MOTOR | RIGHT_MOTOR, KICK_SPEED);
-        BT_motor_port_start(MOTOR_C, -100);
-        if (bot_to_ball_dist > 200){
-            BT_all_stop(1);
-            return 106;
-        }else{
-            return 105;
-        }
+    return 104;
 
-        return 105;
-        break;
+    }
+    case 105: { //kicking 
+
+            // just go straight and score
+            BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, 90);
+            BT_motor_port_start(MOTOR_C, -100);
+            sleep(3);
+            printf("bot_to_ball_dist %f \n",bot_to_ball_dist);
+
+            if ( fabs(bot_to_ball_angle) > angle_bound){ // more than 60 deg
+                BT_all_stop(0);
+                return 101; // reset entire thing;
+            }
+            // if(bot_to_ball_dist > 200){ //next state
+            BT_all_stop(0);
+            return 106;
+            // }
+            // else{
+            //     return 105;
+            // }
+
     }
     case 106: { //done
         BT_all_stop(0);
         return 106;
-        break;
-    }
-    case 107: {
-        BT_all_stop(0);
-        return 107; //stay in 107
         break;
     }
      default: {
