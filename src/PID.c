@@ -71,9 +71,9 @@ int turn_to_target(double current_heading_x, double current_heading_y, double ta
   // printf("motor_out: %d\n", motor_out);
 
   // // TODO : remove below if no work
-  // if (motor_out != 0 && abs(motor_out) < MIN_SPEED){ //sets min power the motors should get
-  //   motor_out = MIN_SPEED * (motor_out/abs(motor_out));
-  // }
+  if (motor_out != 0 && abs(motor_out) < MIN_SPEED){ //sets min power the motors should get
+    motor_out = MIN_SPEED * (motor_out/abs(motor_out));
+  }
 
   //fflush(stdout);
 

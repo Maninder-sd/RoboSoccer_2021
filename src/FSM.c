@@ -383,7 +383,7 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
 
 
 int get_new_state_Penalty (struct RoboAI *ai, int old_state){
-    double angle_bound=0.20; //penalty must be more precise
+    double angle_bound=0.70; //penalty must be more precise
 
     // call when in penalty mode
     double ballPos[2] = {ai->st.old_bcx, ai->st.old_bcy};
@@ -421,13 +421,22 @@ int get_new_state_Penalty (struct RoboAI *ai, int old_state){
     switch (old_state)
     {
     case 101: { // Penalty
+        double goal_to_ball[2] = {ballPos[0]- goalPos[0], ballPos[1] - goalPos[1] };
+        double magnitude = magnitude_vector(goal_to_ball);
 
-        if( fabs(bot_to_targetP_angle) > angle_bound){ //more than 60 deg
-            return 102; //turning
-        }else{
-            return 103; //going forward
-        }
-        return 101;
+        goal_to_ball[0] = GOOD_BALL_DIST * goal_to_ball[0] / magnitude;
+        goal_to_ball[1] = GOOD_BALL_DIST * goal_to_ball[1] / magnitude;
+        
+        // target = ball + offset in ball's direction
+        targetPos[0] = ballPos[0] + goal_to_ball[0];
+        targetPos[1] = ballPos[1] + goal_to_ball[1];
+
+        return 102;
+        // if( fabs(bot_to_targetP_angle) > angle_bound){ //more than 60 deg
+        //     return 102; //turning
+        // }else{
+        //     return 103; //going forward
+        // }
     }
     case 102: {// is it facing the target_p?
         
@@ -458,9 +467,9 @@ int get_new_state_Penalty (struct RoboAI *ai, int old_state){
             //Run PID to targetP
             // BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, 25);
 
-         BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, FORWARD_MAX_SPEED);
+        //  BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, FORWARD_MAX_SPEED);
 
-        //  simple_straight_to_target_PID(bot_to_targetP_dist,  bot_to_targetP_angle);  // Maninder- I will test this later
+         simple_straight_to_target_PID(bot_to_targetP_dist,  bot_to_targetP_angle);  // Maninder- I will test this later
 
             if(bot_to_targetP_dist < 50){ //next state
                 BT_all_stop(0);
@@ -494,7 +503,7 @@ int get_new_state_Penalty (struct RoboAI *ai, int old_state){
             // just go straight and score
             BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, 90);
             BT_motor_port_start(MOTOR_C, -100);
-            sleep(3);
+            sleep(2);
             printf("bot_to_ball_dist %f \n",bot_to_ball_dist);
 
             if ( fabs(bot_to_ball_angle) > angle_bound){ // more than 60 deg
