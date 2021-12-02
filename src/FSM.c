@@ -79,7 +79,7 @@ int get_new_state_soccer(struct RoboAI *ai, int old_state) {
     double bot_to_ball_angle = getAngle_vector(bot_to_ball_vector, botHeading); 
 
     int is_opponent_closer = (magnitude_vector(opponent_to_ball) <= bot_to_ball_dist);
-    int ball_in_middle = (ballPos[1] > IM_SIZE_Y * 0.25 && ballPos[1] < IM_SIZE_Y * 0.75);
+    int ball_in_middle = (ballPos[1] > (IM_SIZE_Y * 0.25) && ballPos[1] < IM_SIZE_Y * 0.75);
 
     double angle_thresh = 0.1;
     double own_goal_x = fabs(IM_SIZE_X - goalPos[0]);
@@ -99,8 +99,8 @@ int get_new_state_soccer(struct RoboAI *ai, int old_state) {
         target_pos[0] = ballPos[0] - own_goal_x; target_pos[1] = ballPos[1] - goalPos[1];
 
         double mg = magnitude_vector(target_pos);
-        target_pos[0] = ballPos[0] + 5*GOOD_BALL_DIST*target_pos[0] / mg;
-        target_pos[1] = ballPos[1] + 5*GOOD_BALL_DIST*target_pos[1] / mg;
+        target_pos[0] = ballPos[0] - GOOD_BALL_DIST*target_pos[0] / mg;
+        target_pos[1] = ballPos[1] - GOOD_BALL_DIST*target_pos[1] / mg;
         
     }
 
@@ -111,27 +111,27 @@ int get_new_state_soccer(struct RoboAI *ai, int old_state) {
         target_pos[0] = corner_target[0] - ballPos[0]; target_pos[1] = corner_target[1] - ballPos[1];
 
         double mg = magnitude_vector(target_pos);
-        target_pos[0] = ballPos[0] + GOOD_BALL_DIST*target_pos[0] / mg;
-        target_pos[1] = ballPos[1] + GOOD_BALL_DIST*target_pos[1] / mg;
+        target_pos[0] = ballPos[0] - GOOD_BALL_DIST*target_pos[0] / mg;
+        target_pos[1] = ballPos[1] - GOOD_BALL_DIST*target_pos[1] / mg;
 
     }
 
     //offside deflect up
     else if (is_bot_off_side && ball_in_middle && !bot_above_ball) {
         printf("offside up\n");
-        double corner_target[2] = {own_goal_x, 10};
+        double corner_target[2] = {own_goal_x, IM_SIZE_Y - 10};
         target_pos[0] = corner_target[0] - ballPos[0]; target_pos[1] = corner_target[1] - ballPos[1];
 
         double mg = magnitude_vector(target_pos);
-        target_pos[0] = ballPos[0] + GOOD_BALL_DIST*target_pos[0] / mg;
-        target_pos[1] = ballPos[1] + GOOD_BALL_DIST*target_pos[1] / mg;
+        target_pos[0] = ballPos[0] - GOOD_BALL_DIST*target_pos[0] / mg;
+        target_pos[1] = ballPos[1] - GOOD_BALL_DIST*target_pos[1] / mg;
 
     }
 
     //offside flee
     else {
         printf("offside retreat");
-        target_pos[0] = own_goal_x - 20; target_pos[1] = goalPos[1];
+        target_pos[0] = own_goal_x + (ai->st.side ? -20 : 20); target_pos[1] = goalPos[1];
     };
 
     double bot_to_targetP_vector[2] = {target_pos[0] - ai->st.old_scx, target_pos[1] - ai->st.old_scy};
