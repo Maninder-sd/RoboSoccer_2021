@@ -103,7 +103,7 @@ int  simple_straight_to_target_PID(double distance_err, double angle_error) {
   double P_error[2] = {distance_err, angle_error};
 
   // We dont use the ID in PID -----------
-  double D_error[2] = {(P_error[0] - old_error[0])/ 0.1, P_error[1] - old_error[1])/ 0.1 }
+  double D_error[2] = {(P_error[0] - old_error[0])/ 0.1, (P_error[1] - old_error[1])/ 0.1 };
   old_error[0] = distance_err;
   old_error[1] = angle_error;
   double I_error[2]={0,0}; //the running sum of i_errors[]
@@ -120,6 +120,7 @@ int  simple_straight_to_target_PID(double distance_err, double angle_error) {
   if(fabs(P_error[1]) > 1){ // this PID stops motors if angle too steep 60deg
     BT_motor_port_stop(RIGHT_MOTOR, 0);
     BT_motor_port_stop(LEFT_MOTOR, 0);
+    return 0;
   }
 
   double motorR_speed, motorL_speed;
@@ -141,10 +142,12 @@ int  simple_straight_to_target_PID(double distance_err, double angle_error) {
 
   BT_motor_port_start(RIGHT_MOTOR, motorR_speed);
   BT_motor_port_start(LEFT_MOTOR, motorL_speed);
+
+  return 1; // todo: more here
 }
 
 
-double drive_straight_to_target_PID(double distance_err, double bot_to_targetP_angle) {
+double drive_straight_to_target_PID(double distance_err) {
 
   static double old_error = 0;
   static double i_errors[INTEGRATION_DEPTH] ;

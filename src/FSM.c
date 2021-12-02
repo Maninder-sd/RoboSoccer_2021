@@ -15,11 +15,13 @@ int get_new_state_Penalty (struct RoboAI *ai, int old_state);
 
 // TODO: move to header
 #define STOP_BOT 106
-#define GOOD_BALL_DIST 100
+#define GOOD_BALL_DIST 150
 #define ANGLE_RESET 0.5 //this is for Chase FSM
 
 #define FORWARD_MAX_SPEED 80
 #define KICK_SPEED 80
+
+#define MAX_SPEED 100
 
 
 int get_new_state_soccer(struct RoboAI *ai, int old_state) {
@@ -302,11 +304,13 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
             
 
         double distance_err, lateral_err;
+
         // finding_errors(ballPos, targetP, goalPos, &distance_err, &lateral_err); // distance error is always positive
         // double drive_straight_output = drive_straight_to_target_PID(distance_err); 
         // BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, 50*drive_straight_output);
 
          BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, FORWARD_MAX_SPEED);
+
 
         //  simple_straight_to_target_PID(bot_to_targetP_dist,  bot_to_targetP_angle);  // Maninder- I will test this later
 
@@ -386,26 +390,21 @@ int get_new_state_Penalty (struct RoboAI *ai, int old_state){
     goalPos[0] = (ai->st.side == 0) ? IM_SIZE_X : 0; //gets the enemy goal
     goalPos[1] = IM_SIZE_Y / 2;
 
-    static double targetP[2] = {-1, -1};
-    double goal_to_ball[2] = {ballPos[0]- goalPos[0], ballPos[1] - goalPos[1] };
-    double magnitude = magnitude_vector(goal_to_ball);
+    static double targetPos[2] = {-1, -1};
 
-    if (targetP[0] == -1 && targetP[1] == -1 ) { // happens once only Q: what if first ball reading is wrong?
-    // lock position only once robot close to ball?
-      // make it vector of magnitude GOOD_BALL_DIST in the balls direction
-      goal_to_ball[0] = GOOD_BALL_DIST * goal_to_ball[0] / magnitude;
-      goal_to_ball[1] = GOOD_BALL_DIST * goal_to_ball[1] / magnitude;
-      
-      // target = ball + offset in ball's direction
-      targetP[0] = ballPos[0] + goal_to_ball[0];
-      targetP[1] = ballPos[1] + goal_to_ball[1];
-    }
+    printf("ballPos[0]: %f, ballPos[1]: %f\n", ballPos[0], ballPos[1]);
+    printf("targetPos[0]: %f, targetPos[1]: %f\n", targetPos[0], targetPos[1]);
 
 
     double bot_to_ball_vector[2] = {ballPos[0] - botPos[0], ballPos[1] - botPos[1]};
     double bot_to_ball_dist = magnitude_vector(bot_to_ball_vector);
     
-    double bot_to_targetP_vector[2] = {targetP[0] - ai->st.old_scx, targetP[1] - ai->st.old_scy};
+    double bot_to_targetP_vector[2] = {targetPos[0] - botPos[0], targetPos[1] - botPos[1]};
+    double target_to_goal_vector[2] = {goalPos[0] - targetPos[0], goalPos[1] - targetPos[1]};
+
+    double beta = getAngle_vector(bot_to_targetP_vector, target_to_goal_vector);
+    printf("beta angle : %f\n", beta);
+
     double bot_to_targetP_dist = magnitude_vector(bot_to_targetP_vector);
 
 
@@ -415,8 +414,19 @@ int get_new_state_Penalty (struct RoboAI *ai, int old_state){
     switch (old_state)
     {
     case 101: { // Penalty
-        return 102;
+        // TODO: set initialization stuff here
+        // ex: MUST move target computation here
+        double goal_to_ball[2] = {ballPos[0]- goalPos[0], ballPos[1] - goalPos[1] };
+        double magnitude = magnitude_vector(goal_to_ball);
 
+        goal_to_ball[0] = GOOD_BALL_DIST * goal_to_ball[0] / magnitude;
+        goal_to_ball[1] = GOOD_BALL_DIST * goal_to_ball[1] / magnitude;
+        
+        // target = ball + offset in ball's direction
+        targetPos[0] = ballPos[0] + goal_to_ball[0];
+        targetPos[1] = ballPos[1] + goal_to_ball[1];
+
+        return 102;
     }
     case 102: {// is it facing the target_p?
         //rotation PID
@@ -432,16 +442,16 @@ int get_new_state_Penalty (struct RoboAI *ai, int old_state){
     }
     case 103: {
         // printf("bot_to_targetP_dist %f\n", bot_to_targetP_dist);
-            //Run PID to targetP - should be able to turn a bit as well
+            //Run PID to targetP
             // BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, 25);
 
         double distance_err, lateral_err;
-        finding_errors(ballPos, targetP, goalPos, &distance_err, &lateral_err); // distance error is always positive
+        finding_errors(targetPos, botPos, goalPos, &distance_err, &lateral_err); // distance error is always positive
         double drive_straight_output = drive_straight_to_target_PID(distance_err); 
-        // printf("drive_straight_output: %f\n", drive_straight_output);
-        BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, drive_straight_output);
+        printf("drive_straight_output: %f\n", drive_straight_output);
+        BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, MAX_SPEED * drive_straight_output);
 
-            if(bot_to_targetP_dist < 100){ //next state
+            if(fabs(beta) < .1){ //next state
                 BT_all_stop(0);
                 return 104;
             }else{
@@ -478,6 +488,7 @@ int get_new_state_Penalty (struct RoboAI *ai, int old_state){
     }
     case 106: { //done
         BT_all_stop(0);
+        return 106;
         break;
     }
     case 107: {
