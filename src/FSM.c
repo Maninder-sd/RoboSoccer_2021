@@ -18,6 +18,9 @@ int get_new_state_Penalty (struct RoboAI *ai, int old_state);
 #define GOOD_BALL_DIST 100
 #define ANGLE_RESET 0.5 //this is for Chase FSM
 
+#define BOUNDARY_X_PADDING 10
+#define BOUNDARY_Y_PADDING 5
+
 
 int get_new_state_soccer(struct RoboAI *ai, int old_state) {
 
@@ -260,6 +263,9 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
     double bot_to_targetP_vector[2] = {targetP[0] - ai->st.old_scx, targetP[1] - ai->st.old_scy};
     double bot_to_targetP_dist = magnitude_vector(bot_to_targetP_vector);
 
+    int on_boundary = botPos[0] < BOUNDARY_X_PADDING || botPos[0] > IM_SIZE_X - BOUNDARY_X_PADDING ||
+        botPos[1] < BOUNDARY_Y_PADDING || botPos[1] > IM_SIZE_Y - BOUNDARY_Y_PADDING;
+
 
     double bot_to_targetP_angle = getAngle_vector(bot_to_targetP_vector, botHeading);
     // acos(dottie_vector(bot_to_targetP_vector, botHeading) / sqrt(dottie_vector(bot_to_targetP_vector, bot_to_targetP_vector)* dottie_vector(botHeading, botHeading)));
@@ -304,7 +310,7 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
 
         BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, 50*drive_straight_output);
 
-            if(bot_to_targetP_dist < 100){ //next state
+            if(on_boundary || bot_to_targetP_dist < 100){ //next state
                 BT_all_stop(0);
                 return 204;
             }else if ( fabs(bot_to_targetP_angle) > ANGLE_RESET){ // more than 60 deg
