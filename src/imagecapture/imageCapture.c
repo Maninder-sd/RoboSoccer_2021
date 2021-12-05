@@ -81,7 +81,7 @@ int printFPS=0;				// Flag that controls FPS printout
 
 // Robot-control data
 struct RoboAI skynet;			// Bot's AI structure
-int DIR_L=0, DIR_R=0, DIR_FWD=0, DIR_BACK=0;	// Toggle flags for manual robot motion
+int DIR_L=0, DIR_R=0, DIR_FWD=0, DIR_BACK=0, TURN_RIGHT_ONLY=0, TURN_LEFT_ONLY=0, KICK=0; 	// Toggle flags for manual robot motion
 int doAI=0;				// Toggle switch for AI processing
 int AIMode = 0;				// AI mode, as per command line
 int botCol = 0;				// Own bot's colour as per command line
@@ -1419,10 +1419,13 @@ void kbHandler(unsigned char key, int x, int y)
  if (key=='f') {if (printFPS==0) printFPS=1; else printFPS=0;}
 
  // NXT robot manual override
- if (key=='i') {if (DIR_FWD==0) {DIR_FWD=1; DIR_L=0; DIR_R=0; DIR_BACK=0; BT_drive(LEFT_MOTOR, RIGHT_MOTOR,75);} else {DIR_FWD=0; BT_all_stop(1);}}
- if (key=='j') {if (DIR_L==0) {DIR_L=1; DIR_R=0; DIR_FWD=0; DIR_BACK=0; BT_turn(LEFT_MOTOR, 50, RIGHT_MOTOR, -50);} else {DIR_L=0; BT_all_stop(1);}}
- if (key=='l') {if (DIR_R==0) {DIR_R=1; DIR_L=0; DIR_FWD=0; DIR_BACK=0; BT_turn(LEFT_MOTOR, -50, RIGHT_MOTOR, 50);} else {DIR_R=0; BT_all_stop(1);}}
- if (key=='k') {if (DIR_BACK==0) {DIR_BACK=1; DIR_L=0; DIR_R=0; DIR_FWD=0; BT_drive(LEFT_MOTOR, RIGHT_MOTOR, -75);} else {DIR_BACK=0; BT_all_stop(1);}}
+ if (key=='i') {if (DIR_FWD==0) {DIR_FWD=1; TURN_RIGHT_ONLY=0; TURN_LEFT_ONLY=0; DIR_L=0; DIR_R=0; DIR_BACK=0; BT_drive(LEFT_MOTOR, RIGHT_MOTOR,75);} else {DIR_FWD=0; BT_all_stop(1);}}
+ if (key=='j') {if (DIR_L==0) {DIR_L=1; TURN_RIGHT_ONLY=0; TURN_LEFT_ONLY=0; DIR_R=0; DIR_FWD=0; DIR_BACK=0; BT_turn(LEFT_MOTOR, 50, RIGHT_MOTOR, -50);} else {DIR_L=0; BT_all_stop(1);}}
+ if (key=='l') {if (DIR_R==0) {DIR_R=1; TURN_RIGHT_ONLY=0; TURN_LEFT_ONLY=0; DIR_L=0; DIR_FWD=0; DIR_BACK=0; BT_turn(LEFT_MOTOR, -50, RIGHT_MOTOR, 50);} else {DIR_R=0; BT_all_stop(1);}}
+ if (key=='k') {if (DIR_BACK==0) {DIR_BACK=1; TURN_RIGHT_ONLY=0; TURN_LEFT_ONLY=0; DIR_L=0; DIR_R=0; DIR_FWD=0; BT_drive(LEFT_MOTOR, RIGHT_MOTOR, -75);} else {DIR_BACK=0; BT_all_stop(1);}}
+ if (key=='m') {if (TURN_RIGHT_ONLY == 0) {TURN_RIGHT_ONLY=1; TURN_LEFT_ONLY=0; DIR_BACK=0; DIR_L=0; DIR_R=0; DIR_FWD=0; BT_turn(LEFT_MOTOR, 0, RIGHT_MOTOR, 50);} else {TURN_RIGHT_ONLY=0;BT_all_stop(1);}}
+ if (key=='n') {if (TURN_LEFT_ONLY == 0) {TURN_LEFT_ONLY=1; TURN_RIGHT_ONLY=0; DIR_BACK=0; DIR_L=0; DIR_R=0; DIR_FWD=0; BT_turn(LEFT_MOTOR, 50, RIGHT_MOTOR, 0);} else {TURN_LEFT_ONLY=0;BT_all_stop(1);}}
+ if (key=='b') {if (KICK == 0) {KICK=1; TURN_RIGHT_ONLY=0; TURN_LEFT_ONLY=0; DIR_FWD=0; DIR_L=0; DIR_R=0; DIR_BACK=0; BT_motor_port_start(MOTOR_C, -100);} else {KICK=0;BT_all_stop(1);}}
  if (key=='o') {BT_all_stop(0);doAI=0;}	// <-- Important!
 }
 
