@@ -23,6 +23,8 @@ int get_new_state_Penalty (struct RoboAI *ai, int old_state);
 
 #define MAX_SPEED 100
 
+#define BOUNDARY_X_PADDING 10
+#define BOUNDARY_Y_PADDING 50
 
 int get_new_state_soccer(struct RoboAI *ai, int old_state) {
     double angle_bound=0.70; 
@@ -283,6 +285,8 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
     double bot_to_targetP_vector[2] = {targetP[0] - ai->st.old_scx, targetP[1] - ai->st.old_scy};
     double bot_to_targetP_dist = magnitude_vector(bot_to_targetP_vector);
 
+    int on_boundary = botPos[0] < BOUNDARY_X_PADDING || botPos[0] > IM_SIZE_X - BOUNDARY_X_PADDING ||
+        botPos[1] < BOUNDARY_Y_PADDING || botPos[1] > IM_SIZE_Y - BOUNDARY_Y_PADDING;
 
     double bot_to_targetP_angle = getAngle_vector(bot_to_targetP_vector, botHeading);
     // acos(dottie_vector(bot_to_targetP_vector, botHeading) / sqrt(dottie_vector(bot_to_targetP_vector, bot_to_targetP_vector)* dottie_vector(botHeading, botHeading)));
