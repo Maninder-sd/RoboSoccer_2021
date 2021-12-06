@@ -13,13 +13,26 @@
 double turn_on_spot_PID(double angle_error);
 int turn_to_target(double current_heading_x, double current_heading_y, double target_heading_x, double target_heading_y);
 
-double bootleg_turn_on_spot_PID(double angle_err)
-{
-  double motor_speed = FAST_MOTOR_SPEED;
-  if (fabs(angle_err) < .8)
-    motor_speed = SLOW_MOTOR_SPEED;
+double bootleg_turn_on_spot_PID(double angle_err){
+  int angle_bound ;
+  int  motorR_speed, motorL_speed;
+  if(angle_err > 0.3 ){ 
+    // Args:
+//   angle_error : if negative turn right motor more  crossie(heading_dir, target_dir) <0
+//                if positive turn left motor more crossie(heading_dir, target_dir) > 0
+//                     this is because y axis is flipped
+    motorR_speed =  (angle_err < 0)? 10:  -10;
+    motorL_speed =  (angle_err < 0)? -10:  10;
+  }else{ // PID slows bot if close enough and turns off other pid
+    motorR_speed =  (angle_err < 0)? 5:  -5;
+    motorL_speed =  (angle_err < 0)? -5:  5;
+  }
 
-  return motor_speed;
+  printf("motorL_speed %d motorL_speed %d \n",motorL_speed,motorR_speed );
+  BT_motor_port_start(RIGHT_MOTOR, motorR_speed);
+  BT_motor_port_start(LEFT_MOTOR, motorL_speed);
+
+  return 1; 
 }
 
 double turn_on_spot_PID(double angle_error)

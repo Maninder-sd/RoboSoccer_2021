@@ -356,10 +356,12 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
         case 202: {
 
             //rotation PID
-            int done_turning = turn_to_target(botHeading[0], botHeading[1], bot_to_targetP_vector[0], bot_to_targetP_vector[1]);
+            // int done_turning = turn_to_target(botHeading[0], botHeading[1], bot_to_targetP_vector[0], bot_to_targetP_vector[1]);
+            bootleg_turn_on_spot_PID(bot_to_targetP_angle);
 
             if( fabs(bot_to_targetP_angle) < 0.3){ // less than 17 deg
             // if(done_turning){
+                printf("condition met\n");
                 BT_all_stop(1);
                 return 203;
             }else{
@@ -396,10 +398,12 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
         case 204: {
 
             //rotation PID
-            int done_turning = turn_to_target(botHeading[0], botHeading[1], bot_to_ball_vector[0], bot_to_ball_vector[1]);
+            // int done_turning = turn_to_target(botHeading[0], botHeading[1], bot_to_ball_vector[0], bot_to_ball_vector[1]);
+            bootleg_turn_on_spot_PID(bot_to_targetP_angle);
 
-            // if( fabs(bot_to_targetP_angle) < 0.3){ // less than 17 deg
-            if(done_turning){
+            if( fabs(bot_to_targetP_angle) < 0.1){ // less than 17 deg
+            // if(done_turning){
+                printf("condition met\n");
                 BT_all_stop(1);
                 BT_motor_port_start(LEFT_MOTOR|RIGHT_MOTOR, 20);
                 sleep(1);

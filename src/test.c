@@ -132,7 +132,7 @@ int  simple_straight_to_target_PID(double distance_err, double angle_error) {
 //   angle_error : if negative turn right motor more  crossie(heading_dir, target_dir) <0
 //                if positive turn left motor more crossie(heading_dir, target_dir) > 0
 //                     this is because y axis is flipped
-    double turn_speed = (10*  P_error[1]/angle_bound );  // max is 10
+    double turn_speed = (20*  P_error[1]/angle_bound );  // max is 10
     motorR_speed -= turn_speed;
     motorL_speed += turn_speed;
   }else{ // PID slows bot if close enough and turns off other pid
