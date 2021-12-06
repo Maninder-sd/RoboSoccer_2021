@@ -24,7 +24,13 @@ int get_new_state_Penalty (struct RoboAI *ai, int old_state);
 #define MAX_SPEED 100
 
 #define BOUNDARY_X_PADDING 10
-#define BOUNDARY_Y_PADDING 50
+
+#define Y_UP_PADDING 50
+#define Y_DOWN_PADDING 50
+// #define X_UP_PADDING 50
+// #define x_DOW_PADDING 50
+
+
 
 int get_new_state_soccer(struct RoboAI *ai, int old_state) {
     double angle_bound=0.70; 
@@ -267,17 +273,35 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
 
     static double targetP[2] = {-1, -1};
 
-    
+    int ball_on_up_boundary = (ballPos[1] <= Y_UP_PADDING);
+    int ball_on_down_boundary = ( IM_SIZE_Y - Y_DOWN_PADDING <= ballPos[1] );
+    // for trickshot
+    if(ball_on_up_boundary){
+        ballPos[1] *=-1; 
+    }else if (ball_on_down_boundary){
+        ballPos[1] = 2*IM_SIZE_Y -ballPos[1]; 
+    }
+
       double goal_to_ball[2] = {ballPos[0]- goalPos[0], ballPos[1] - goalPos[1] };
       double magnitude = magnitude_vector(goal_to_ball);
       // make it vector of magnitude GOOD_BALL_DIST in the balls direction
       goal_to_ball[0] = GOOD_BALL_DIST * goal_to_ball[0] / magnitude;
       goal_to_ball[1] = GOOD_BALL_DIST * goal_to_ball[1] / magnitude;
       
+      
+    //   int ball_on_up_boundary = (ballPos[1] <= Y_UP_PADDING);
+
       // target = ball + offset in ball's direction
       targetP[0] = ballPos[0] + goal_to_ball[0];
       targetP[1] = ballPos[1] + goal_to_ball[1];
 
+    if(ball_on_up_boundary){
+        targetP[1] *=-1; 
+        ballPos[1] *=-1; // flip back to correct ball pos
+    }else if (ball_on_down_boundary){
+        targetP[1] = 2*IM_SIZE_Y -targetP[1]; 
+        ballPos[1] = 2*IM_SIZE_Y -ballPos[1]; // flip back to correct ball pos
+    }
 
     double bot_to_ball_vector[2] = {ballPos[0] - botPos[0], ballPos[1] - botPos[1]};
     double bot_to_ball_dist = magnitude_vector(bot_to_ball_vector);
@@ -285,8 +309,6 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
     double bot_to_targetP_vector[2] = {targetP[0] - ai->st.old_scx, targetP[1] - ai->st.old_scy};
     double bot_to_targetP_dist = magnitude_vector(bot_to_targetP_vector);
 
-    int on_boundary = botPos[0] < BOUNDARY_X_PADDING || botPos[0] > IM_SIZE_X - BOUNDARY_X_PADDING ||
-        botPos[1] < BOUNDARY_Y_PADDING || botPos[1] > IM_SIZE_Y - BOUNDARY_Y_PADDING;
 
     double bot_to_targetP_angle = getAngle_vector(bot_to_targetP_vector, botHeading);
     // acos(dottie_vector(bot_to_targetP_vector, botHeading) / sqrt(dottie_vector(bot_to_targetP_vector, bot_to_targetP_vector)* dottie_vector(botHeading, botHeading)));
