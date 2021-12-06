@@ -200,3 +200,45 @@ double drive_straight_to_target_PID(double distance_err) {
 //   printf("distance_err: %f  lateral_err:%f\n", distance_err, lateral_err);
 //   return 0;
 // }
+
+
+double pendulum_s_movement() {
+  static int current_frame_count = 0, target_frame_count = 0, go_backwards = 1, undo_previous_action = 0;
+
+  if (go_backwards && !undo_previous_action) {
+  }
+
+  int left_motor_power = 0, right_motor_power = 0;
+  if (go_backwards) {
+    if (!undo_previous_action) {
+      left_motor_power = -100;
+      right_motor_power = -70;
+      undo_previous_action = 1;
+    } else {
+      left_motor_power = 100;
+      right_motor_power = 70;
+      go_backwards = 0;
+      undo_previous_action = 0;
+    }
+  } else {
+    if (!undo_previous_action) {
+      left_motor_power = 70;
+      right_motor_power = 100;
+      undo_previous_action = 1;
+    } else {
+      left_motor_power = -70;
+      right_motor_power = -100;
+      go_backwards = 1;
+      undo_previous_action = 0;
+    }
+  }
+
+  // if ()
+
+  // reverse 
+  BT_turn(LEFT_MOTOR, left_motor_power, RIGHT_MOTOR, right_motor_power);
+  // get to starting
+  BT_turn(LEFT_MOTOR, left_motor_power, RIGHT_MOTOR, right_motor_power);
+
+
+}
