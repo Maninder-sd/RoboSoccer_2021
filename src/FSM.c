@@ -265,6 +265,7 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
     double ballPos[2] = {ai->st.old_bcx, ai->st.old_bcy};
     double botHeading[2] = {ai->st.sdx, ai->st.sdy};
     double botPos[2] = {ai->st.old_scx, ai->st.old_scy};
+    double enemyPos[2] = {ai->st.old_ocx, ai->st.old_ocy};
     double goalPos[2];
     // side=0 implies the robot's own side is the left side
     // side=1 implies the robot's own side is the right side
@@ -275,8 +276,8 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
 
     int ball_on_up_boundary = (ballPos[1] <= Y_UP_PADDING);
     int ball_on_down_boundary = ( IM_SIZE_Y - Y_DOWN_PADDING <= ballPos[1] );
-    // for trickshot
-    if(ball_on_up_boundary){
+    
+    if(ball_on_up_boundary){ // for trickshot - boundary case
         ballPos[1] *=-1; 
     }else if (ball_on_down_boundary){
         ballPos[1] = 2*IM_SIZE_Y -ballPos[1]; 
@@ -287,15 +288,12 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
       // make it vector of magnitude GOOD_BALL_DIST in the balls direction
       goal_to_ball[0] = GOOD_BALL_DIST * goal_to_ball[0] / magnitude;
       goal_to_ball[1] = GOOD_BALL_DIST * goal_to_ball[1] / magnitude;
-      
-      
-    //   int ball_on_up_boundary = (ballPos[1] <= Y_UP_PADDING);
 
       // target = ball + offset in ball's direction
       targetP[0] = ballPos[0] + goal_to_ball[0];
       targetP[1] = ballPos[1] + goal_to_ball[1];
 
-    if(ball_on_up_boundary){
+    if(ball_on_up_boundary){// for trickshot - boundary case
         targetP[1] *=-1; 
         ballPos[1] *=-1; // flip back to correct ball pos
     }else if (ball_on_down_boundary){
@@ -303,20 +301,41 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
         ballPos[1] = 2*IM_SIZE_Y -ballPos[1]; // flip back to correct ball pos
     }
 
+    double enemy_to_bot_vector[2] = { botPos[0] - enemyPos[0], botPos[1] - enemyPos[1]};
+    double enemy_to_targetP_vector[2] = { targetP[0] - enemyPos[0], targetP[1] - enemyPos[1]};
+
+    double ball_to_bot_vector[2] = { botPos[0] - ballPos[0], botPos[1] - ballPos[1]};
+    double ball_to_targetP_vector[2] = { targetP[0] - ballPos[0], targetP[1] - ballPos[1]};
+
+    // Updates targetP based on Obstacle
+    if (fabs(getAngle_vector(enemy_to_bot_vector, enemy_to_targetP_vector)) > M_PI*3/4 ){
+        // means enemy is an obstacle
+        targetP[0] = enemyPos[0];
+        targetP[1] = enemyPos[1];
+        targetP[1] =  (targetP[1] > IM_SIZE_Y/2) ? targetP[1] - IM_SIZE_Y/3:  targetP[1] + IM_SIZE_Y/3;
+    }else if (fabs(getAngle_vector(ball_to_bot_vector, ball_to_targetP_vector)) > M_PI*3/4 ){
+        // means ball is an obstacle
+        targetP[0] = ballPos[0];
+        targetP[1] = ballPos[1];
+        targetP[1] =  (targetP[1] > IM_SIZE_Y/2) ? targetP[1] - IM_SIZE_Y/3:  targetP[1] + IM_SIZE_Y/3;
+    }
+
+    // recalculates incase needed late on
+    enemy_to_targetP_vector[0] = targetP[0] - enemyPos[0];
+    enemy_to_targetP_vector[1] = targetP[1] - enemyPos[1];
+
+    ball_to_targetP_vector[2] = targetP[0] - ballPos[0];
+    ball_to_targetP_vector[2] = targetP[1] - ballPos[1];
+
+    // calculates needed measurements 
     double bot_to_ball_vector[2] = {ballPos[0] - botPos[0], ballPos[1] - botPos[1]};
     double bot_to_ball_dist = magnitude_vector(bot_to_ball_vector);
+    double bot_to_ball_angle = getAngle_vector(bot_to_ball_vector, botHeading); 
     
     double bot_to_targetP_vector[2] = {targetP[0] - ai->st.old_scx, targetP[1] - ai->st.old_scy};
     double bot_to_targetP_dist = magnitude_vector(bot_to_targetP_vector);
-
-
     double bot_to_targetP_angle = getAngle_vector(bot_to_targetP_vector, botHeading);
-    // acos(dottie_vector(bot_to_targetP_vector, botHeading) / sqrt(dottie_vector(bot_to_targetP_vector, bot_to_targetP_vector)* dottie_vector(botHeading, botHeading)));
 
-    double bot_to_ball_angle = getAngle_vector(bot_to_ball_vector, botHeading); 
-    // acos(dottie_vector(bot_to_ball_vector, botHeading) / sqrt(dottie_vector(bot_to_ball_vector, bot_to_ball_vector)* dottie_vector(botHeading, botHeading)));
-
-        // printf("theta: %f\n", theta);
 
     switch (old_state){
         case 201: {
