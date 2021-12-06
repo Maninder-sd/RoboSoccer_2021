@@ -1423,8 +1423,8 @@ void kbHandler(unsigned char key, int x, int y)
  if (key=='j') {if (DIR_L==0) {DIR_L=1; TURN_RIGHT_ONLY=0; TURN_LEFT_ONLY=0; DIR_R=0; DIR_FWD=0; DIR_BACK=0; BT_turn(LEFT_MOTOR, 50, RIGHT_MOTOR, -50);} else {DIR_L=0; BT_all_stop(1);}}
  if (key=='l') {if (DIR_R==0) {DIR_R=1; TURN_RIGHT_ONLY=0; TURN_LEFT_ONLY=0; DIR_L=0; DIR_FWD=0; DIR_BACK=0; BT_turn(LEFT_MOTOR, -50, RIGHT_MOTOR, 50);} else {DIR_R=0; BT_all_stop(1);}}
  if (key=='k') {if (DIR_BACK==0) {DIR_BACK=1; TURN_RIGHT_ONLY=0; TURN_LEFT_ONLY=0; DIR_L=0; DIR_R=0; DIR_FWD=0; BT_drive(LEFT_MOTOR, RIGHT_MOTOR, -75);} else {DIR_BACK=0; BT_all_stop(1);}}
- if (key=='m') {if (TURN_RIGHT_ONLY == 0) {TURN_RIGHT_ONLY=1; TURN_LEFT_ONLY=0; DIR_BACK=0; DIR_L=0; DIR_R=0; DIR_FWD=0; BT_turn(LEFT_MOTOR, 0, RIGHT_MOTOR, 50);} else {TURN_RIGHT_ONLY=0;BT_all_stop(1);}}
- if (key=='n') {if (TURN_LEFT_ONLY == 0) {TURN_LEFT_ONLY=1; TURN_RIGHT_ONLY=0; DIR_BACK=0; DIR_L=0; DIR_R=0; DIR_FWD=0; BT_turn(LEFT_MOTOR, 50, RIGHT_MOTOR, 0);} else {TURN_LEFT_ONLY=0;BT_all_stop(1);}}
+ if (key=='L') {if (TURN_RIGHT_ONLY == 0) {TURN_RIGHT_ONLY=1; TURN_LEFT_ONLY=0; DIR_BACK=0; DIR_L=0; DIR_R=0; DIR_FWD=0; BT_turn(LEFT_MOTOR, 0, RIGHT_MOTOR, 50);} else {TURN_RIGHT_ONLY=0;BT_all_stop(1);}}
+ if (key=='J') {if (TURN_LEFT_ONLY == 0) {TURN_LEFT_ONLY=1; TURN_RIGHT_ONLY=0; DIR_BACK=0; DIR_L=0; DIR_R=0; DIR_FWD=0; BT_turn(LEFT_MOTOR, 50, RIGHT_MOTOR, 0);} else {TURN_LEFT_ONLY=0;BT_all_stop(1);}}
  if (key=='b') {if (KICK == 0) {KICK=1; TURN_RIGHT_ONLY=0; TURN_LEFT_ONLY=0; DIR_FWD=0; DIR_L=0; DIR_R=0; DIR_BACK=0; BT_motor_port_start(MOTOR_C, -100);} else {KICK=0;BT_all_stop(1);}}
  if (key=='o') {BT_all_stop(0);doAI=0;}	// <-- Important!
 }
