@@ -25,8 +25,8 @@ int get_new_state_Penalty (struct RoboAI *ai, int old_state);
 
 #define BOUNDARY_X_PADDING 10
 
-#define Y_UP_PADDING 50
-#define Y_DOWN_PADDING 50
+#define Y_UP_PADDING 100
+#define Y_DOWN_PADDING 100
 // #define X_UP_PADDING 50
 // #define x_DOW_PADDING 50
 
@@ -278,8 +278,10 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
     int ball_on_down_boundary = ( IM_SIZE_Y - Y_DOWN_PADDING <= ballPos[1] );
     
     if(ball_on_up_boundary){ // for trickshot - boundary case
+    printf("Trick shot \n");
         ballPos[1] *=-1; 
     }else if (ball_on_down_boundary){
+         printf("Trick shot \n");
         ballPos[1] = 2*IM_SIZE_Y -ballPos[1]; 
     }
 
@@ -310,22 +312,25 @@ int get_new_state_Chase(struct RoboAI *ai, int old_state){
     // Updates targetP based on Obstacle
     if (fabs(getAngle_vector(enemy_to_bot_vector, enemy_to_targetP_vector)) > M_PI*3/4 ){
         // means enemy is an obstacle
+        printf("enemy is obstacle \n");
         targetP[0] = enemyPos[0];
         targetP[1] = enemyPos[1];
         targetP[1] =  (targetP[1] > IM_SIZE_Y/2) ? targetP[1] - IM_SIZE_Y/3:  targetP[1] + IM_SIZE_Y/3;
     }else if (fabs(getAngle_vector(ball_to_bot_vector, ball_to_targetP_vector)) > M_PI*3/4 ){
         // means ball is an obstacle
+        printf("Ball is obstacle \n");
         targetP[0] = ballPos[0];
         targetP[1] = ballPos[1];
         targetP[1] =  (targetP[1] > IM_SIZE_Y/2) ? targetP[1] - IM_SIZE_Y/3:  targetP[1] + IM_SIZE_Y/3;
     }
-
+    
+    printf("TargetP(x,y): %f, %f \n",targetP[0],targetP[1]);
     // recalculates incase needed late on
     enemy_to_targetP_vector[0] = targetP[0] - enemyPos[0];
     enemy_to_targetP_vector[1] = targetP[1] - enemyPos[1];
 
-    ball_to_targetP_vector[2] = targetP[0] - ballPos[0];
-    ball_to_targetP_vector[2] = targetP[1] - ballPos[1];
+    ball_to_targetP_vector[0] = targetP[0] - ballPos[0];
+    ball_to_targetP_vector[1] = targetP[1] - ballPos[1];
 
     // calculates needed measurements 
     double bot_to_ball_vector[2] = {ballPos[0] - botPos[0], ballPos[1] - botPos[1]};
