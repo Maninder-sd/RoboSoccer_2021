@@ -36,6 +36,7 @@
 
 #include "FSM.c"
 #include "PID.c"
+#include "lostBotFinder.c"
 
 
 
@@ -872,7 +873,11 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
   *****************************************************************************/
   
   
-
+  if (!ai->st.selfID) {
+    pendulum_s_movement();
+  } else {
+    reset_lost_config();
+  }
   // note our angles are expected to be in range [0, 360)
   // take out those unexpected angle changes
   if (ai->st.self != NULL && ai->st.ball != NULL) {
