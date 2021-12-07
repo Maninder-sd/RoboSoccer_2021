@@ -719,7 +719,7 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
                               
   ** Do not change the behaviour of the robot ID routine **
  **************************************************************************/
-  // printf("AI_main() called...\n");
+  printf("AI_main() called...\n");
   static double ux,uy,len,mmx,mmy,px,py,lx,ly,mi;
   double angDif, lPow,rPow;
   char line[1024];

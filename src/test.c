@@ -125,7 +125,7 @@ int  simple_straight_to_target_PID(double distance_err, double angle_error) {
   }
 
   int  motorR_speed, motorL_speed;
-  if(P_error[0] > 150){ 
+  if(P_error[0] > 200){ // TODO: change for now 
     motorR_speed = 80;
     motorL_speed = 80;
 // Args:
