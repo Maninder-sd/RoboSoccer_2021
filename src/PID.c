@@ -11,7 +11,7 @@
 #include "roboAI.h"
 
 double turn_on_spot_PID(double angle_error);
-int turn_to_target(double current_heading_x, double current_heading_y, double target_heading_x, double target_heading_y);
+int turn_to_target(double current_heading_x, double current_heading_y, double target_heading_x, double target_heading_y, int is_precise);
 
 double bootleg_turn_on_spot_PID(double angle_err){
   int angle_bound ;
@@ -65,7 +65,7 @@ double turn_on_spot_PID(double angle_error)
 /**
  * Returns angle error between the two vectors put in
  */
-int turn_to_target(double current_heading_x, double current_heading_y, double target_heading_x, double target_heading_y)
+int turn_to_target(double current_heading_x, double current_heading_y, double target_heading_x, double target_heading_y, int is_precise)
 {
   // printf("current_heading_x: %f  current_heading_y: %f\n", current_heading_x, current_heading_y);
 
@@ -90,7 +90,7 @@ int turn_to_target(double current_heading_x, double current_heading_y, double ta
 
   //fflush(stdout);
 
-  if (fabs(angle_error) < 0.1)
+  if (fabs(angle_error) < (is_precise ? 0.05: 0.1))
   { //event = facing ball
     printf("condition met\n");
     BT_motor_port_stop(LEFT_MOTOR, 1);

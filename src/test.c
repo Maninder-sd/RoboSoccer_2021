@@ -80,7 +80,7 @@ double align_straight_to_target_PID(double lateral_err) {
 }
 
 
-int  simple_straight_to_target_PID(double distance_err, double angle_error) {
+int  simple_straight_to_target_PID(double distance_err, double angle_error, int is_precise) {
   /*
     Index rules:
     0 - distance_err
@@ -117,22 +117,22 @@ int  simple_straight_to_target_PID(double distance_err, double angle_error) {
   // ---------------------------------------
   i_index =(i_index+1) % INTEGRATION_DEPTH;
 
-  if(fabs(P_error[1]) > angle_bound){ // this PID stops motors if angle too steep 60deg
-    BT_motor_port_stop(RIGHT_MOTOR, 0);
-    BT_motor_port_stop(LEFT_MOTOR, 0);
-    printf("Amgle too steep \n");
-    return -1;
-  }
+  // if(fabs(P_error[1]) > angle_bound){ // this PID stops motors if angle too steep 60deg
+  //   BT_motor_port_stop(RIGHT_MOTOR, 0);
+  //   BT_motor_port_stop(LEFT_MOTOR, 0);
+  //   printf("Amgle too steep \n");
+  //   return -1;
+  // }
 
   int  motorR_speed, motorL_speed;
-  if(P_error[0] > 200){ // TODO: change for now 
-    motorR_speed = 80;
-    motorL_speed = 80;
+  if(P_error[0] > (is_precise ? 250 : 200)){ // TODO: change for now 
+    motorR_speed = (is_precise ? 50 : 80);
+    motorL_speed = (is_precise ? 50 : 80);
 // Args:
 //   angle_error : if negative turn right motor more  crossie(heading_dir, target_dir) <0
 //                if positive turn left motor more crossie(heading_dir, target_dir) > 0
 //                     this is because y axis is flipped
-    double turn_speed = (20*  P_error[1]/angle_bound );  // max is 10
+    double turn_speed = ((is_precise ? 15 : 20)*  P_error[1]/angle_bound );  // max is 10
     motorR_speed -= turn_speed;
     motorL_speed += turn_speed;
   }else{ // PID slows bot if close enough and turns off other pid

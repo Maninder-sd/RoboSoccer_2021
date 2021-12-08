@@ -25,7 +25,14 @@ double magnitude_vector(double v[2]);
 double getAngle_vector(double u[2] , double v[2]);
 
 
+void project_u_on_v_vec(double u[2], double v[2], double p[2]){
+  
+  double mg_proj = dottie_vector(u, v) / pow(magnitude_vector(v), 2);
 
+  p[0] = v[0] * mg_proj; 
+  p[1] = v[1] * mg_proj;
+  return;
+}
 
 inline double dottie(double vx, double vy, double ux, double uy)
 {
