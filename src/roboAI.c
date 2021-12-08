@@ -733,7 +733,7 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
   static double old_heading_x = 0, old_heading_y = 0;
   static int initial_gyro_angle = 0;
   static double initial_heading_x = -1, initial_heading_y = -1;
-
+  static int is_lost[5] = {0,0,0,0,0};
   // denoising filters
   static struct linear_filter_context self_bot_linear_filter_pos_x;
   static struct linear_filter_context self_bot_linear_filter_pos_y;
@@ -774,6 +774,7 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
   old_dx=0, old_dy=0;
   once_ran = 0; //TODO: 
   frame_count = 0;
+  is_lost[0] = 0; is_lost[1] = 0; is_lost[2] = 0; is_lost[3] = 0; is_lost[4] = 0; 
   old_heading_x = 0, old_heading_y = 0;
   initial_gyro_angle = 0;
   initial_heading_x = -1, initial_heading_y = -1;
@@ -871,17 +872,14 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
    state transitions and with calling the appropriate function based on what
    the bot is supposed to be doing.
   *****************************************************************************/
-  
-  
-  if (!ai->st.selfID) {
-    pendulum_s_movement();
-  } else {
-    reset_lost_config();
-  }
-  // note our angles are expected to be in range [0, 360)
-  // take out those unexpected angle changes
-  if (ai->st.self != NULL && ai->st.ball != NULL) {
-    // TODO: maybe move this into a function
+  // // printing bounding box
+  // if (ai->st.self != NULL) {
+  //   printf("size: %d, box-area: %d\n", ai->st.self->size, (ai->st.self->x2 - ai->st.self->x1) * (ai->st.self->y2 - ai->st.self->y1));
+  //   print_self_data(ai);
+  // }
+
+  // flipping heading if we have to
+  if (ai->st.selfID == 1 && ai->st.self != NULL) {
     double angle_difference = dottie(ai->st.sdx, ai->st.sdy, old_heading_x, old_heading_y);
     if (angle_difference < 0) {
       ai->st.sdx *= -1;
@@ -889,18 +887,35 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
       ai->st.self->dx *= -1;
       ai->st.self->dy *= -1;
     }
-      // printf("before: headingDir_x %f headingDir_y %f\n ", ai->st.sdx,ai->st.sdy);
-    double our_heading_x = initial_heading_x, our_heading_y = initial_heading_y;
-    int current_gyro_reading = BT_read_gyro_sensor(GYRO_PORT);
-    // printf("gryo reading: %d\n", current_gyro_reading);
-    double gyro_angle_change = (double)(initial_gyro_angle - current_gyro_reading);
-    rotate_vector(&our_heading_x, &our_heading_y, gyro_angle_change);
-    // printf("ai->st.sdx: %f, ai->st.sdy: %f, our_heading_x: %f, our_heading_y: %f\n", ai->st.sdx, ai->st.sdy, our_heading_x, our_heading_y);
-    ai->st.sdx = our_heading_x;
-    ai->st.sdy  = our_heading_y;
-    // TODO: clean up here and also set self->dx and dy
-      printf("state: %d headingDir_x %f headingDir_y %f\n ", ai->st.state,  our_heading_x, our_heading_y);
-    // printf("scx: %f scy: %f", ai->st.old_scx, ai->st.old_scy);
+  }
+
+  // getting heading from gyro
+  double gyro_heading_x = initial_heading_x, gyro_heading_y = initial_heading_y;
+  int current_gyro_reading = BT_read_gyro_sensor(GYRO_PORT);
+  double gyro_angle_change = (double)(initial_gyro_angle - current_gyro_reading);
+  rotate_vector(&gyro_heading_x, &gyro_heading_y, gyro_angle_change);
+
+  printf("gyro_heading_x: %f gyro_heading_y: %f\n ", gyro_heading_x, gyro_heading_y);
+  printf("ai->st.sdx: %f, ai->st.sdy: %f\n", ai->st.sdx, ai->st.sdy);
+
+
+  // is_lost[frame_count % 5] = (ai->st.selfID == 0 || ai->st.self == NULL );
+  // // lost finder
+  // if ((is_lost[0] == 1 && is_lost[1] == 1 && is_lost[2] == 1 && is_lost[3] == 1 && is_lost[4] == 1)
+  //   // || dottie(ai->st.sdx, ai->st.sdy, gyro_heading_x, gyro_heading_y) < 0.7 // doesn't work well when robot is turning fast
+  // ) {
+  //   printf("robot lost - trying to find it\n");
+  //   pendulum_s_movement();
+  // } else {
+  //   printf("robot found\n");
+  //   reset_lost_config();
+  // }
+
+  if (ai->st.self != NULL && ai->st.ball != NULL) {
+    printf("state: %d headingDir_x: %f headingDir_y: %f\n ", ai->st.state, ai->st.sdx, ai->st.sdy);
+    ai->st.sdx = gyro_heading_x;
+    ai->st.sdy  = gyro_heading_y;
+
     if ( 100< ai->st.state  && ai->st.state < 200){
       ai->st.state = get_new_state_Penalty(ai, ai->st.state);
     }else if ( 200< ai->st.state  ){
@@ -908,39 +923,7 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
     } else {
       ai->st.state = get_new_state_soccer(ai, ai->st.state);
     }
-    
-    //  double ball_pos[2] = {IM_SIZE_X-1, IM_SIZE_Y/2}, 
-    //         bot_pos[2] = {ai->st.old_scx, ai->st.old_scy}, 
-    //         target_pos[2] = {goal_center_x, goal_center_y};
-    // double distance_err, lateral_err;
-    // finding_errors(ball_pos, bot_pos, target_pos, &distance_err, &lateral_err); // distance error is always positive
-    // double drive_straight_output = drive_straight_to_target_PID(distance_err); 
-    
-    // //calculate angle correction needed at current position
-    // double relative_target_angle = get_target_angle_from_line(lateral_err, ball_pos, target_pos);
-    // double relative_curr_angle = get_curr_angle_from_line(ball_pos, target_pos, ai->st.sdx, ai->st.sdy);
-    // double angle_err = boundAngle180To180(relative_target_angle - relative_curr_angle);
-
-    // printf("distance_err: %f  lateral_err:%f : %f \n", distance_err, lateral_err); 
-    // printf("target_angle: %f curr_angle: %f  angle_err:%f\n",relative_target_angle, relative_curr_angle, angle_err); 
-    // fflush(stdout);
-
-
-    // double max_speed = 30, c1 = 1, c2 = 2;
-    // double csum = c1+c2; c1 = c1/csum; c2 = c2/csum;
-    
-    //BT_motor_port_start(RIGHT_MOTOR, c1*max_speed - c2*(angle_err / M_PI)*max_speed);
-    //BT_motor_port_start(LEFT_MOTOR, c1*max_speed + c2*(angle_err / M_PI)*max_speed);
-
-    //double right_bias = -5 * turn_align_output, left_bais = 5 * turn_align_output;
-
-    // BT_drive(LEFT_MOTOR, RIGHT_MOTOR, 50*drive_straight_output);			// Start forward motion to establish heading
-    //BT_motor_port_start(RIGHT_MOTOR, 50*drive_straight_output + right_bias);  // set right motor speed
-    //BT_motor_port_start(LEFT_MOTOR, 50*drive_straight_output + left_bais);  // set right motor speed
-    // turn_to_target(ai->st.sdx, ai->st.sdy, target_heading_x, target_heading_y);
   }
-  // turn PID
-
   
   //  fprintf(stderr,"Just trackin'!\n");	// bot, opponent, and ball.
   old_heading_x = ai->st.sdx;

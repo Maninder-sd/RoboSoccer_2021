@@ -14,13 +14,18 @@
  * 
 */
 
+static int MOTOR_1_POWER = 50, MOTOR_2_POWER = 15;
 static int current_frame_count = 0, target_frame_count = 0, go_backwards = 1, undo_previous_action = 0;
 
-double reset_lost_config() {
-    current_frame_count = 0; target_frame_count = 0; go_backwards = 1; undo_previous_action = 0;
+void inline reset_lost_config() {
+    if (!(current_frame_count == 0 && target_frame_count == 0 && go_backwards == 1 && undo_previous_action == 0)) {
+      current_frame_count = 0; target_frame_count = 0; go_backwards = 1; undo_previous_action = 0;
+      printf("robot found and motors stopped\n");
+      BT_all_stop(1);
+    }
 }
 
-double pendulum_s_movement() {
+void pendulum_s_movement() {
   if (go_backwards && !undo_previous_action && current_frame_count == 0) {
     target_frame_count += 10;
     current_frame_count = 0;
@@ -33,16 +38,16 @@ double pendulum_s_movement() {
     // printf("go_backwards\n");
     if (!undo_previous_action) {
       // printf("first action\n");
-      left_motor_power = -100;
-      right_motor_power = -70;
+      left_motor_power = -MOTOR_1_POWER;
+      right_motor_power = -MOTOR_2_POWER;
       if (current_frame_count == target_frame_count) {
         undo_previous_action = 1;
         current_frame_count = 0;
       }
     } else {
       // printf("undo_previous_action\n");
-      left_motor_power = 100;
-      right_motor_power = 70;
+      left_motor_power = MOTOR_1_POWER;
+      right_motor_power = MOTOR_2_POWER;
       if (current_frame_count == target_frame_count) {
         go_backwards = 0;
         undo_previous_action = 0;
@@ -53,16 +58,16 @@ double pendulum_s_movement() {
     // printf("go_fwd\n");
     if (!undo_previous_action) {
       // printf("first action\n");
-      left_motor_power = 70;
-      right_motor_power = 100;
+      left_motor_power = MOTOR_2_POWER;
+      right_motor_power = MOTOR_1_POWER;
       if (current_frame_count == target_frame_count) {
         undo_previous_action = 1;
         current_frame_count = 0;
       }
     } else {
       // printf("undo_previous_action\n");
-      left_motor_power = -70;
-      right_motor_power = -100;
+      left_motor_power = -MOTOR_2_POWER;
+      right_motor_power = -MOTOR_1_POWER;
       if (current_frame_count == target_frame_count) {
         go_backwards = 1;
         undo_previous_action = 0;
