@@ -64,7 +64,7 @@ int get_new_state_soccer(struct RoboAI *ai, int old_state) {
     int do_down_trick_shot = 0;
 
     int ball_above_middle = ballPos[1] < IM_SIZE_Y / 2;
-    int enemy_defending_shot = fabs(getAngle_vector(ball_to_goal, enemy_to_ball)) > M_PI*3/4;
+    int enemy_defending_shot = fabs(getAngle_vector(ball_to_goal, enemy_to_ball)) > M_PI*.9;
 
     if (enemy_defending_shot) printf("enemy defending\n");
 
@@ -294,7 +294,7 @@ int get_new_state_soccer(struct RoboAI *ai, int old_state) {
 
             if(bot_to_ball_dist > 200){ //next state
                 BT_all_stop(0);
-                return 6;
+                return 1;
             }else if ( fabs(bot_to_ball_angle) > angle_bound){ // more than 60 deg
                 BT_all_stop(0);
                 return 1; // reset entire thing;
@@ -310,7 +310,7 @@ int get_new_state_soccer(struct RoboAI *ai, int old_state) {
                 BT_all_stop(0);
                 return 1; //start pid again
             }else{
-                return 6;
+                return 1;
             }
 
             return 6; //stay in 206

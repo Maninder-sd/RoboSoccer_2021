@@ -899,17 +899,17 @@ void AI_main(struct RoboAI *ai, struct blob *blobs, void *state)
   printf("ai->st.sdx: %f, ai->st.sdy: %f\n", ai->st.sdx, ai->st.sdy);
 
 
-  // is_lost[frame_count % 5] = (ai->st.selfID == 0 || ai->st.self == NULL );
-  // // lost finder
-  // if ((is_lost[0] == 1 && is_lost[1] == 1 && is_lost[2] == 1 && is_lost[3] == 1 && is_lost[4] == 1)
-  //   // || dottie(ai->st.sdx, ai->st.sdy, gyro_heading_x, gyro_heading_y) < 0.7 // doesn't work well when robot is turning fast
-  // ) {
-  //   printf("robot lost - trying to find it\n");
-  //   pendulum_s_movement();
-  // } else {
-  //   printf("robot found\n");
-  //   reset_lost_config();
-  // }
+  is_lost[frame_count % 5] = (ai->st.selfID == 0 || ai->st.self == NULL );
+  // lost finder
+  if ((is_lost[0] == 1 && is_lost[1] == 1 && is_lost[2] == 1 && is_lost[3] == 1 && is_lost[4] == 1)
+    // || dottie(ai->st.sdx, ai->st.sdy, gyro_heading_x, gyro_heading_y) < 0.7 // doesn't work well when robot is turning fast
+  ) {
+    printf("robot lost - trying to find it\n");
+    pendulum_s_movement();
+  } else {
+    printf("robot found\n");
+    reset_lost_config();
+  }
 
   if (ai->st.self != NULL && ai->st.ball != NULL) {
     printf("state: %d headingDir_x: %f headingDir_y: %f\n ", ai->st.state, ai->st.sdx, ai->st.sdy);
