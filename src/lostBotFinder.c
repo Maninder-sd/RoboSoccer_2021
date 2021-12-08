@@ -16,16 +16,19 @@
 
 static int MOTOR_1_POWER = 50, MOTOR_2_POWER = 15;
 static int current_frame_count = 0, target_frame_count = 0, go_backwards = 1, undo_previous_action = 0;
+static int lost_ran = 0;
 
 void inline reset_lost_config() {
-    if (!(current_frame_count == 0 && target_frame_count == 0 && go_backwards == 1 && undo_previous_action == 0)) {
+    if (lost_ran) {
       current_frame_count = 0; target_frame_count = 0; go_backwards = 1; undo_previous_action = 0;
       printf("robot found and motors stopped\n");
       BT_all_stop(1);
+      lost_ran = 0;
     }
 }
 
 void pendulum_s_movement() {
+  lost_ran = 1;
   if (go_backwards && !undo_previous_action && current_frame_count == 0) {
     target_frame_count += 10;
     current_frame_count = 0;
